@@ -60,6 +60,10 @@ TIME_DRIFT_NORM_MS = 5000.0
 class DRLPlannerJob:
     snapshot: Snapshot
     bandwidth_bps: float
+    # 断网（零带宽样本）deferred delivery：上传暂停到链路恢复后完成。
+    # outage_resume_fn 为 None 时（默认）两字段不生效，行为与补丁前一致。
+    outage_resume_ms: float = 0.0
+    outage_resume_bps: float = 0.0
 
 
 class FixedBandwidthEdgePlanner:
@@ -68,9 +72,11 @@ class FixedBandwidthEdgePlanner:
         model_wrapper: ProfileTravelModelWrapper,
         enable_comm_delay: bool,
         clock: Optional[FastEvalClock] = None,
+        outage_resume_fn=None,
     ):
         self.model_wrapper = model_wrapper
         self.enable_comm_delay = bool(enable_comm_delay)
+        self.outage_resume_fn = outage_resume_fn
         self.clock = clock or FastEvalClock(False)
         self.fast_eval = bool(self.clock.enabled)
         self._pending_job: Optional[DRLPlannerJob] = None
@@ -89,7 +95,15 @@ class FixedBandwidthEdgePlanner:
             if self._closed:
                 return False
             snapshot.planner_started_logical_ms = self.clock.now_ms if self.fast_eval else None
-            self._pending_job = DRLPlannerJob(snapshot=copy.deepcopy(snapshot), bandwidth_bps=float(bandwidth_bps))
+            resume_ms, resume_bps = 0.0, float(bandwidth_bps)
+            if bandwidth_bps <= 0 and self.outage_resume_fn is not None:
+                resume_ms, resume_bps = self.outage_resume_fn()
+            self._pending_job = DRLPlannerJob(
+                snapshot=copy.deepcopy(snapshot),
+                bandwidth_bps=float(bandwidth_bps),
+                outage_resume_ms=float(resume_ms),
+                outage_resume_bps=float(resume_bps),
+            )
             self._cond.notify()
             return True
 
@@ -257,7 +271,13 @@ class FixedBandwidthEdgePlanner:
                 if isinstance(_s, dict) and not _s.get("instruction"):
                     _s["instruction"] = _fallback
         payload_bytes, payload_bits, payload_mb = estimate_uplink_payload_bits_from_episodes(episodes)
-        uplink_latency_ms = calculate_latency_ms(payload_bits, job.bandwidth_bps) if self.enable_comm_delay else 0.0
+        if self.enable_comm_delay and job.bandwidth_bps <= 0:
+            # 断网（零带宽样本）：上传暂停，链路恢复后按恢复时刻带宽完成剩余上行
+            # （deferred delivery）。全正样本 trace 下该分支不可达。
+            resume_bps = job.outage_resume_bps if job.outage_resume_bps > 0 else job.bandwidth_bps
+            uplink_latency_ms = float(job.outage_resume_ms) + calculate_latency_ms(payload_bits, resume_bps)
+        else:
+            uplink_latency_ms = calculate_latency_ms(payload_bits, job.bandwidth_bps) if self.enable_comm_delay else 0.0
         timing_start = snapshot.planner_started_logical_ms
         if timing_start is None:
             timing_start = snapshot.submitted_logical_ms
@@ -265,7 +285,7 @@ class FixedBandwidthEdgePlanner:
             with self._cond:
                 self._edge_arrival_logical_ms = float(timing_start + uplink_latency_ms)
                 self._cond.notify_all()
-        if uplink_latency_ms > 0:
+        if uplink_latency_ms > 0 and math.isfinite(uplink_latency_ms):
             divisor = self.clock.speedup if self.fast_eval else 1.0
             time.sleep(uplink_latency_ms / (1000.0 * divisor))
 
@@ -388,7 +408,12 @@ class DRLSchedulerEnv(gym.Env):
         if _seq is not None:
             self.bandwidth_trace.reset_for_episode(_seq)
         self._bw_t0_ms = float(self.clock.now_ms) if self.clock.enabled else time.perf_counter() * 1000.0
-        self.planner = FixedBandwidthEdgePlanner(self.model_wrapper, self.enable_comm_delay, clock=self.clock)
+        self.planner = FixedBandwidthEdgePlanner(
+            self.model_wrapper,
+            self.enable_comm_delay,
+            clock=self.clock,
+            outage_resume_fn=self._make_outage_resume_fn(),
+        )
         self.active_traj = []
         self.active_index = 0
         self.active_result = None
@@ -673,6 +698,19 @@ class DRLSchedulerEnv(gym.Env):
         elapsed_ms = now_ms - getattr(self, "_bw_t0_ms", now_ms)
         self.last_observed_bandwidth_bps = float(self.bandwidth_trace.bandwidth_at_ms(elapsed_ms))
         return self.last_observed_bandwidth_bps
+
+    def _make_outage_resume_fn(self):
+        """Resolve (resume_ms, resume_bps) for a zero-bandwidth request at
+        submit time, anchored to the same per-episode logical-time origin as
+        _sample_bandwidth.  Never fires for all-positive traces."""
+        def resolve():
+            now_ms = (
+                float(self.clock.now_ms) if self.clock.enabled
+                else time.perf_counter() * 1000.0
+            )
+            elapsed_ms = now_ms - getattr(self, "_bw_t0_ms", now_ms)
+            return self.bandwidth_trace.outage_resume_ms(elapsed_ms)
+        return resolve
 
     def _apply_result(self, result: PlannerResult, *, record_request_ne: bool = True) -> None:
         result.applied_logical_ms = self.clock.now_ms if self.clock.enabled else None

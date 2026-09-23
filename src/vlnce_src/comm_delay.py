@@ -34,7 +34,9 @@ class BandwidthTrace:
                         if cell not in (None, ""):
                             value = float(cell) * 1e6
                             break
-                if value is not None and value > 0:
+                # Keep zero-throughput samples: they encode measured link
+                # outages.  All-positive traces are unaffected.
+                if value is not None and value >= 0:
                     samples.append(value)
         return samples
 
@@ -68,10 +70,33 @@ class BandwidthTrace:
         digest = hashlib.sha256(str(seq_name).encode("utf-8")).hexdigest()
         self.reset(int(digest[:8], 16))
 
+    def outage_resume_ms(self, elapsed_ms: float) -> tuple:
+        """(resume_ms, resume_bps) for a request sampled at ``elapsed_ms``.
+
+        Positive sampled bandwidth: (0.0, that bandwidth).  Zero-bandwidth
+        sample (measured link outage): the upload pauses and completes at the
+        first positive second at or after the sampled second -- returns the
+        offset to that second in ms and its bandwidth.  Purely a function of
+        the trace and elapsed logical time (no index advance, thread-safe).
+        """
+        base = int(max(0.0, float(elapsed_ms)) // 1000.0)
+        idx0 = (self._index + base) % self.sample_count
+        if self.samples_bps[idx0] > 0:
+            return 0.0, self.samples_bps[idx0]
+        for offset in range(self.sample_count):
+            probe = (idx0 + offset) % self.sample_count
+            if self.samples_bps[probe] > 0:
+                return float(offset * 1000), self.samples_bps[probe]
+        # trace has no positive sample at all: delivery never completes
+        return float("inf"), self.samples_bps[idx0]
+
 
 def calculate_latency_ms(payload_bits, bandwidth_bps):
+    """Uplink latency in ms; non-positive bandwidth (link outage) is unbounded."""
     if bandwidth_bps <= 0:
-        raise ValueError("bandwidth_bps must be positive")
+        # 零带宽（断网）：上行不可完成，返回 inf。预测侧（predicted_remaining_ms）
+        # 用它触发 NCN 接管；实际送达时延由 _run_job 的 deferred-delivery 分支给出。
+        return float("inf")
     return float(payload_bits) / float(bandwidth_bps) * 1000.0
 
 
