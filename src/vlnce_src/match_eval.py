@@ -379,21 +379,18 @@ class MatchEnv(DRLSchedulerEnv):
             return "buffer_insufficient_for_predicted_edge_response"
         return None
 
-    def _activate_ncn(self, reason: str, *, recovery_request_id: Optional[int] = None) -> None:
+    def _activate_ncn(self, reason: str) -> None:
         if not self._ncn_active:
             self._ncn_active = True
             self._ncn_actions_in_interval = 0
             self._ncn_takeovers += 1
-        if recovery_request_id is None:
-            self._ncn_stale_request_ids.update(self.planner.pending_request_ids())
-            self._ncn_recovery_request_id = None
-        else:
-            self._ncn_recovery_request_id = int(recovery_request_id)
+        self._ncn_stale_request_ids.update(self.planner.pending_request_ids())
+        self._ncn_recovery_request_id = None
         if self._ncn_recovery_wait_start_ms is None:
             self._ncn_recovery_wait_start_ms = float(self.clock.now_ms)
 
     def _submit_ncn_recovery_request(self, observed_bw: float, extra: Dict[str, Any]) -> bool:
-        """Capture a current edge observation after a stale NCN-era result."""
+        """Capture one current-state request after NCN stops moving."""
         snapshot, obs_ms, dino_ms = self._capture_snapshot()
         extra["recovery_request_obs_latency_ms"] = float(obs_ms)
         extra["recovery_request_dino_latency_ms"] = float(dino_ms)
@@ -417,21 +414,22 @@ class MatchEnv(DRLSchedulerEnv):
             self._ncn_recovery_wait_ms.append(max(0.0, float(self.clock.now_ms) - self._ncn_recovery_wait_start_ms))
         self._ncn_recovery_wait_start_ms = None
 
-    def _log_ncn_event(self, observed_bw: float, extra: Dict[str, Any], terminal_reason: Optional[str] = None):
+    def _log_ncn_event(self, observed_bw: float, extra: Dict[str, Any], terminal_reason: Optional[str] = None,
+                       action_id: int = 3):
         terminated, detected_reason = self._check_terminal()
         if terminal_reason is None:
             terminal_reason = detected_reason
         terminated = bool(terminated or terminal_reason is not None)
-        extra.setdefault("action_name", "NCN")
-        extra.setdefault("motion_decision", "NCN")
-        extra.setdefault("request_decision", "NO_REQUEST")
+        extra.setdefault("action_name", "NCN" if action_id == 3 else ACTION_NAMES[action_id])
+        extra.setdefault("motion_decision", "NCN" if action_id == 3 else "STOP")
+        extra.setdefault("request_decision", "NO_REQUEST" if action_id == 3 else "REQUEST")
         extra.setdefault("control_source", "ncn")
         extra.setdefault("ncn_active", bool(self._ncn_active))
         self._log_record(
             record_type="scheduler_step",
-            action_id=3,
+            action_id=action_id,
             observed_bandwidth_bps=observed_bw,
-            request_bandwidth_bps=None,
+            request_bandwidth_bps=observed_bw if action_id == 0 else None,
             elapsed_ms=float(extra.get("elapsed_ms", 0.0)),
             reward=0.0,
             reward_parts={},
@@ -520,6 +518,53 @@ class MatchEnv(DRLSchedulerEnv):
         })
         return self._log_ncn_event(observed_bw, extra, terminal_reason=terminal_reason)
 
+    def _step_ncn_recovery_hover(self, observed_bw: float, extra: Dict[str, Any]):
+        """Stop NCN, request once from the current pose, and hover until it returns."""
+        self.scheduler_step_count += 1
+        wait_start = time.perf_counter()
+        logical_start_ms = float(self.clock.now_ms)
+        extra.update({"control_source": "edge_recovery", "ncn_recovery_phase": "hover_wait"})
+        # Configured outages can hold results outside the planner queue.
+        for old in self._outage_held_results:
+            self._ncn_stale_results += 1
+            self._ncn_stale_request_ids.discard(int(old.request_id))
+        extra["ncn_discarded_held_results"] = len(self._outage_held_results)
+        self._outage_held_results.clear()
+        if not self._submit_ncn_recovery_request(observed_bw, extra):
+            extra["elapsed_ms"] = float(self.clock.now_ms) - logical_start_ms
+            return self._log_ncn_event(observed_bw, extra, action_id=0)
+        request_id = self._ncn_recovery_request_id
+        extra["submitted_request_id"] = request_id
+        discarded = 0
+        while True:
+            result = self.planner.wait_result()
+            if int(result.request_id) == request_id:
+                break
+            discarded += 1
+            self._ncn_stale_results += 1
+            self._ncn_stale_request_ids.discard(int(result.request_id))
+        extra["ncn_discarded_wait_results"] = discarded
+        extra["hover_wait_ms"] = (
+            float(self.clock.now_ms) - logical_start_ms
+            if self.clock.enabled else (time.perf_counter() - wait_start) * 1000.0
+        )
+        if len(result.refined_waypoints) > 0:
+            if self._edge_latency is not None:
+                self._edge_latency.update(result.llm_latency_ms, result.traj_latency_ms)
+            # No UAV motion occurred after this snapshot: TCM is inapplicable.
+            DRLSchedulerEnv._apply_result(self, result)
+            self._complete_ncn_recovery()
+            extra["ncn_recovery_reason"] = "fresh_edge_buffer_applied"
+        else:
+            self._ncn_recovery_request_id = None
+            extra["ncn_recovery_reason"] = "empty_edge_buffer"
+        extra["ncn_active"] = bool(self._ncn_active)
+        extra["elapsed_ms"] = (
+            float(self.clock.now_ms) - logical_start_ms
+            if self.clock.enabled else (time.perf_counter() - wait_start) * 1000.0
+        )
+        return self._log_ncn_event(observed_bw, extra, action_id=0)
+
     def _step_with_ncn(self, action):
         assert self.state is not None and self.planner is not None
         observed_bw = self._sample_bandwidth()
@@ -532,37 +577,19 @@ class MatchEnv(DRLSchedulerEnv):
             self.scheduler_step_count += 1
             return self._step_target_lock(observed_bw, time.perf_counter(), self.clock.now_ms)
 
-        result = self._poll_edge_result_for_match()
-        if result is not None and self._ncn_active:
-            extra: Dict[str, Any] = {"control_source": "ncn", "ncn_active": True}
-            if self._ncn_recovery_request_id is not None and int(result.request_id) == self._ncn_recovery_request_id:
-                self._apply_result(result)
-                if self.target_lock.active or self._buffer_remaining() > 0:
-                    self._complete_ncn_recovery()
-                    extra.update({"control_source": "edge_recovery", "ncn_recovery_reason": "valid_edge_buffer_applied"})
-                    return self._log_ncn_event(observed_bw, extra)
-                extra["ncn_recovery_invalid_buffer"] = True
-                self._submit_ncn_recovery_request(observed_bw, extra)
-                return self._run_ncn_action(observed_bw, "invalid_recovery_buffer", extra)
-
-            # A request captured before NCN first moved is semantically stale.
-            self._ncn_stale_results += 1
-            self._ncn_stale_request_ids.discard(int(result.request_id))
-            extra.update({"ncn_discarded_stale_result_id": int(result.request_id), "ncn_recovery_reason": "stale_edge_result"})
-            self._submit_ncn_recovery_request(observed_bw, extra)
-            return self._run_ncn_action(observed_bw, "stale_result_recovery", extra)
-
         if self._ncn_active:
-            return self._run_ncn_action(observed_bw, "ncn_interval")
+            extra: Dict[str, Any] = {}
+            if not self._outage_active() and observed_bw >= float(args.scheduler_req_bw_thresh_mbps) * 1e6:
+                return self._step_ncn_recovery_hover(observed_bw, extra)
+            result = self._poll_edge_result_for_match()
+            if result is not None:
+                self._ncn_stale_results += 1
+                self._ncn_stale_request_ids.discard(int(result.request_id))
+                extra["ncn_discarded_stale_result_id"] = int(result.request_id)
+            return self._run_ncn_action(observed_bw, "ncn_interval", extra)
 
         reason = self._ncn_takeover_reason()
         if reason is not None:
-            # An outage can start with a valid cold-start buffer but no pending
-            # request.  Submit one now so its delayed return signals recovery.
-            if not self.planner.has_inflight():
-                bootstrap_extra: Dict[str, Any] = {}
-                self._submit_ncn_recovery_request(observed_bw, bootstrap_extra)
-                self._ncn_recovery_request_id = None
             self._activate_ncn(reason)
             return self._run_ncn_action(observed_bw, reason)
 
@@ -570,16 +597,9 @@ class MatchEnv(DRLSchedulerEnv):
         return self._step_edge_only(action)
 
     def _step_refresh_after_lock_ncn(self, observed_bw: float):
-        """Fresh post-lock request is current-state recovery input, not stale."""
+        """TCM lock completed: refresh while hovering, then resume AHS."""
         self.scheduler_step_count += 1
-        extra: Dict[str, Any] = {"forced_refresh_after_target_lock": True}
-        extra["target_lock_completion_reason"] = self.target_lock.completion_reason
-        self._needs_target_lock_refresh = False
-        self.target_lock.resume_normal()
-        if not self._submit_ncn_recovery_request(observed_bw, extra):
-            return self._log_ncn_event(observed_bw, extra)
-        self._activate_ncn("post_target_lock_refresh", recovery_request_id=self._ncn_recovery_request_id)
-        return self._run_ncn_action(observed_bw, "post_target_lock_refresh", extra)
+        return self._step_refresh_after_lock(observed_bw, time.perf_counter(), self.clock.now_ms)
 
     def _stop_and_request(self, bandwidth_bps: float, extra: Dict[str, Any]) -> None:
         """Make an AHS STOP_REQUEST preemptible only for final MATCH."""
