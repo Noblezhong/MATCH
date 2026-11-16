@@ -7,9 +7,12 @@ single, verified aggregation protocol:
 
   SR / OSR / NE / control steps / logical E2E
       from episode_end records (identical for every paradigm)
-  CR   AirSim judgment: episode_end.collision AND any frame has_collided
-       (scans <eval_dir>/<episode>/log/*.json; the episode_end collision
-       flag alone over-counts depth-sensor near-misses)
+  CR   episode_end.collision AND any logged frame has_collided
+       (scans <eval_dir>/<episode>/log/*.json). This is the operational
+       definition used in Tables 1 and 3: the terminal flag also covers
+       proximity/stall/timeout outcomes, while AirSim collision events can
+       appear at reset or be consumed before a frame is logged. Do not
+       interpret this conjunction as an exact physical-contact rate.
   time_shift / state_shift   paradigm-specific application-time sampling
   buffer_wait                paradigm-specific stalled-time accounting
 
@@ -438,6 +441,7 @@ def build_result(
     invalid: list[int],
     eval_dir: Path,
     wait_denominator: str = "all",
+    expected_episodes: int = 1418,
 ) -> dict:
     episodes = []
     airsim = scan_airsim_collision(eval_dir, set(terminals))
@@ -445,7 +449,8 @@ def build_result(
         terminal = terminals[ep]
         ev = events.get(ep, {"shifts": [], "wait_ms": 0.0})
         shifts = ev["shifts"]
-        # CR: AirSim judgment — episode_end.collision AND any frame has_collided
+        # Published Tables 1/3 CR: terminal flag AND any logged AirSim flag.
+        # Keep both component flags below so reset/read-clear effects remain auditable.
         has_airsim = bool(airsim.get(ep, False))
         episodes.append(
             {
@@ -455,8 +460,11 @@ def build_result(
                 "collision": int(bool(terminal.get("collision")) and has_airsim),
                 "episode_end_collision": int(bool(terminal.get("collision"))),
                 "airsim_collision": int(has_airsim),
-                "navigation_error": _number(terminal, "final_ne_m", float("nan")),
-                "e2e_latency_s": _number(terminal, "logical_elapsed_ms", 0.0) / 1000.0,
+                "navigation_error": _number(terminal, "final_ne_m"),
+                "e2e_latency_s": (
+                    _number(terminal, "logical_elapsed_ms") / 1000.0
+                    if _number(terminal, "logical_elapsed_ms") is not None else None
+                ),
                 "executed_waypoints": int(terminal.get("control_steps") or 0),
                 "time_shift_s": _fmean([t for t, _ in shifts]),
                 "state_shift_m": _fmean([s for _, s in shifts]),
@@ -472,14 +480,16 @@ def build_result(
         "SR": sum(e["success"] for e in episodes) / n,
         "OSR": sum(e["oracle_success"] for e in episodes) / n,
         "CR": sum(e["collision"] for e in episodes) / n,
-        "NE_m": statistics.fmean(e["navigation_error"] for e in episodes),
+        "NE_m": statistics.fmean(e["navigation_error"] for e in episodes if e["navigation_error"] is not None),
         "avg_control_steps": statistics.fmean(e["executed_waypoints"] for e in episodes),
-        "mean_logical_E2E_s": statistics.fmean(e["e2e_latency_s"] for e in episodes),
+        "mean_logical_E2E_s": statistics.fmean(e["e2e_latency_s"] for e in episodes if e["e2e_latency_s"] is not None),
+        "NE_count": sum(e["navigation_error"] is not None for e in episodes),
+        "E2E_count": sum(e["e2e_latency_s"] is not None for e in episodes),
         "time_shift_s": _fmean([e["time_shift_s"] for e in episodes if e["time_shift_s"] is not None]),
         "state_shift_m": _fmean([e["state_shift_m"] for e in episodes if e["state_shift_m"] is not None]),
         # Self-describing scope marker: shift excludes TCM-trigger and NCN
         # module-internal events (see extract_ppo comment, 2026-09-17).
-        "shift_scope": "ahs_applications_only",
+        "shift_scope": "applied_edge_guidance_excluding_module_internal" if method == "ppo" else "applied_edge_guidance",
         # Main table rows PPO/rule/continuous/stop-go average over all episodes;
         # the two TC rows (TC-OFF 19.48, TC-ON 92.81) average only over episodes
         # that experienced any wait. --wait-denominator reproduces either.
@@ -488,8 +498,11 @@ def build_result(
         ),
     }
     warnings: list[str] = []
-    if n != 1418:
-        warnings.append(f"expected 1418 terminal episodes, got {n}")
+    if n != expected_episodes:
+        warnings.append(f"expected {expected_episodes} terminal episodes, got {n}")
+    missing_terminal = [e["episode_id"] for e in episodes if e["navigation_error"] is None or e["e2e_latency_s"] is None]
+    if missing_terminal:
+        warnings.append(f"{len(missing_terminal)} episodes with missing terminal NE/E2E: {missing_terminal[:10]}")
     if invalid:
         warnings.append(f"{len(invalid)} invalid JSON lines: {invalid[:10]}")
     missing_shifts = [e["episode_id"] for e in episodes if e["time_shift_s"] is None]
@@ -524,7 +537,8 @@ EXTRACTORS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--input", required=True, type=Path,
+                        help="one JSONL file, a profile_logs directory, or an evaluation directory")
     parser.add_argument("--eval-dir", type=Path,
                         help="evaluation run directory containing episode log dirs "
                              "(default: parent of the JSONL's parent)")
@@ -541,14 +555,26 @@ def main() -> None:
                              "matches PPO/rule/continuous/stop-go rows) averages over "
                              "every episode; 'waiting' averages only over episodes "
                              "with any wait (matches the two TC main-table rows)")
+    parser.add_argument("--exclude-episode", action="append", default=[],
+                        help="episode ID to exclude from every metric (repeatable)")
+    parser.add_argument("--expected-episodes", type=int,
+                        help="expected final episode count; defaults to 1418 minus exclusions")
     args = parser.parse_args()
 
-    if not args.input.is_file():
-        parser.error(f"input file not found: {args.input}")
-    eval_dir = args.eval_dir or args.input.parent.parent
+    if args.input.is_file():
+        inputs = [args.input]
+        eval_dir = args.eval_dir or args.input.parent.parent
+    elif args.input.is_dir():
+        profile_dir = args.input / "profile_logs" if (args.input / "profile_logs").is_dir() else args.input
+        inputs = sorted(profile_dir.glob("*.jsonl"))
+        eval_dir = args.eval_dir or (args.input if profile_dir != args.input else args.input.parent)
+    else:
+        parser.error(f"input not found: {args.input}")
+    if not inputs:
+        parser.error(f"no JSONL inputs under {args.input}")
 
     invalid: list[int] = []
-    method = args.method if args.method != "auto" else detect_method(args.input, invalid)
+    method = args.method if args.method != "auto" else detect_method(inputs[0], invalid)
     if args.method == "auto" and invalid:
         # detection consumed some invalid lines; re-run with a fresh list
         invalid = []
@@ -557,16 +583,38 @@ def main() -> None:
         # Main-table definitions per paradigm
         wait_mode = "approved" if method == "continuous" else "e2e-action"
 
-    if method == "continuous":
-        terminals, events, records = extract_action_line(args.input, invalid, "continuous", wait_mode)
-    elif method == "stopgo":
-        terminals, events, records = extract_action_line(args.input, invalid, "stopgo", wait_mode)
-    else:
-        terminals, events, records = EXTRACTORS[method](args.input, invalid)
+    terminals: dict = {}
+    events: dict = {}
+    records = 0
+    duplicate_terminals = 0
+    for input_path in inputs:
+        if method == "continuous":
+            file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "continuous", wait_mode)
+        elif method == "stopgo":
+            file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "stopgo", wait_mode)
+        else:
+            file_terminals, file_events, file_records = EXTRACTORS[method](input_path, invalid)
+        records += file_records
+        duplicate_terminals += len(set(terminals).intersection(file_terminals))
+        terminals.update(file_terminals)
+        events.update(file_events)
+
+    excluded = set(args.exclude_episode)
+    absent = excluded.difference(terminals)
+    if absent:
+        parser.error(f"excluded episode IDs absent from terminals: {sorted(absent)}")
+    for episode_id in excluded:
+        terminals.pop(episode_id)
+        events.pop(episode_id, None)
 
     result = build_result(args.input, method, terminals, events, records, invalid, eval_dir,
-                          wait_denominator=args.wait_denominator)
-    output = args.output or args.input.with_name(args.input.stem + "_metrics.json")
+                          wait_denominator=args.wait_denominator,
+                          expected_episodes=args.expected_episodes if args.expected_episodes is not None else 1418-len(excluded))
+    result["inputs"] = [str(path) for path in inputs]
+    result["excluded_episode_ids"] = sorted(excluded)
+    result["duplicate_terminals_resolved_by_latest_segment"] = duplicate_terminals
+    output = args.output or (args.input.with_name(args.input.stem + "_metrics.json") if args.input.is_file()
+                             else eval_dir / "combined_metrics.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

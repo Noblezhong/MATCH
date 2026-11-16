@@ -263,7 +263,7 @@ def eval(
                                         current_pose,
                                         enable_comm_delay,
                                         chunk_waypoints,
-                                        decision_step=int(applied_result.request_id),
+                                        decision_step=int(control_step),
                                         clock=episode_clock,
                                         applied_exec_step=control_step,
                                     )
@@ -319,7 +319,7 @@ def eval(
                                         current_pose,
                                         enable_comm_delay,
                                         chunk_waypoints,
-                                        decision_step=int(effective.request_id),
+                                        decision_step=int(control_step),
                                         clock=episode_clock,
                                         applied_exec_step=control_step,
                                     )
@@ -549,7 +549,7 @@ def eval(
                                     current_pose,
                                     enable_comm_delay,
                                     chunk_waypoints,
-                                    decision_step=int(applied_result.request_id),
+                                    decision_step=int(control_step),
                                     clock=episode_clock,
                                     applied_exec_step=control_step,
                                 )

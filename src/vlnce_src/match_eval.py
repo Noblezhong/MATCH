@@ -118,7 +118,7 @@ class MatchEnv(DRLSchedulerEnv):
         return obs, info
 
     # ── TCM: result application (Algorithm 1 IF branch) ─────────────
-    def _apply_result(self, result) -> None:
+    def _apply_result(self, result):
         if self._edge_latency is not None:
             self._edge_latency.update(result.llm_latency_ms, result.traj_latency_ms)
         effective, tcm_extra = self.tcm_runtime.apply_result(
@@ -134,6 +134,7 @@ class MatchEnv(DRLSchedulerEnv):
             return
         super()._apply_result(effective)
         self._tcm_step_extras.update(tcm_extra)
+        return effective
 
     def _maybe_correct_mid_execution(self):
         """Execution-time TCM gate (Algorithm 1 IF branch, while still flying).
@@ -194,7 +195,7 @@ class MatchEnv(DRLSchedulerEnv):
         # instead of waiting for the next result to arrive.  Firing here also
         # activates the target lock, so the very same step routes into the
         # lock branch below.
-        if self._maybe_correct_mid_execution() is not None:
+        if bool(args.match_tcm_mid_exec_enabled) and self._maybe_correct_mid_execution() is not None:
             extra["tcm_mid_exec_correction"] = True
         if self.target_lock.active:
             return self._step_target_lock(observed_bw, step_start, step_logical_start)
@@ -375,8 +376,7 @@ class MatchEnv(DRLSchedulerEnv):
         predicted_ms = self.planner.predicted_remaining_ms(self._edge_latency.compute_ms)
         if predicted_ms is None:
             return None
-        if predicted_ms > self._remaining_buffer_horizon_ms() + float(args.ncn_response_safety_margin_ms):
-            return "buffer_insufficient_for_predicted_edge_response"
+        # Buffer shortage alone must not trigger NCN takeover.
         return None
 
     def _activate_ncn(self, reason: str) -> None:
@@ -579,13 +579,38 @@ class MatchEnv(DRLSchedulerEnv):
 
         if self._ncn_active:
             extra: Dict[str, Any] = {}
-            if not self._outage_active() and observed_bw >= float(args.scheduler_req_bw_thresh_mbps) * 1e6:
+            # Preserve the completed NCN-fix run exactly when the new pilot
+            # switch is off: recovery hover precedes any result polling.
+            if (not bool(args.match_ncn_resume_on_pending_result)
+                    and not self._outage_active()
+                    and observed_bw >= float(args.scheduler_req_bw_thresh_mbps) * 1e6):
                 return self._step_ncn_recovery_hover(observed_bw, extra)
             result = self._poll_edge_result_for_match()
             if result is not None:
+                if bool(args.match_ncn_resume_on_pending_result) and len(result.refined_waypoints) > 0:
+                    logical_start_ms = float(self.clock.now_ms)
+                    self.scheduler_step_count += 1
+                    extra.update({
+                        "control_source": "edge_recovery",
+                        "ncn_recovery_phase": "existing_result_resume",
+                        "ncn_resumed_existing_request_id": int(result.request_id),
+                    })
+                    effective = self._apply_result(result)
+                    extra.update(self._tcm_step_extras)
+                    if effective is not None:
+                        self._complete_ncn_recovery()
+                        extra["ncn_recovery_reason"] = "existing_edge_result_applied"
+                        extra["elapsed_ms"] = float(self.clock.now_ms) - logical_start_ms
+                        return self._log_ncn_event(observed_bw, extra, action_id=0)
+                    extra["ncn_resume_result_rejected"] = True
                 self._ncn_stale_results += 1
                 self._ncn_stale_request_ids.discard(int(result.request_id))
                 extra["ncn_discarded_stale_result_id"] = int(result.request_id)
+            if (not self._outage_active()
+                    and observed_bw >= float(args.scheduler_req_bw_thresh_mbps) * 1e6
+                    and bool(args.match_ncn_resume_on_pending_result)
+                    and result is not None and len(result.refined_waypoints) == 0):
+                return self._step_ncn_recovery_hover(observed_bw, extra)
             return self._run_ncn_action(observed_bw, "ncn_interval", extra)
 
         reason = self._ncn_takeover_reason()

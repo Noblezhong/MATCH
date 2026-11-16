@@ -96,12 +96,16 @@ def save_images(episodes, trajectory_dir):
                 if cid >= len(episode['rgb']):
                     break
                 image = episode['rgb'][cid]
+                if image is None or not hasattr(image, 'size') or image.size == 0:
+                    continue
                 cv2.imwrite(os.path.join(trajectory_dir, camera_name, str(idx).zfill(6) + '.png'), image)
         if 'depth' in episode:
             for cid, camera_name in enumerate(DEPTH_FOLDER):
                 if cid >= len(episode['depth']):
                     break
                 image = episode['depth'][cid]
+                if image is None or not hasattr(image, 'size') or image.size == 0:
+                    continue
                 cv2.imwrite(os.path.join(trajectory_dir, camera_name, str(idx).zfill(6) + '.png'), image)
 
 def load_object_description():

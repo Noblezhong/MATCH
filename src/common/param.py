@@ -38,6 +38,14 @@ class CommonArguments:
         default=2.5,
         metadata={"help": "state-shift threshold for applying trajectory correction"},
     )
+    match_tcm_mid_exec_enabled: bool = field(
+        default=True,
+        metadata={"help": "MATCH experiment flag for mid-execution TCM correction"},
+    )
+    match_ncn_resume_on_pending_result: bool = field(
+        default=False,
+        metadata={"help": "MATCH experiment flag: resume AHS on the existing in-flight edge result"},
+    )
     edge_vlm_host: str = field(default="127.0.0.1", metadata={"help": "edge VLM server host"})
     edge_vlm_bind_host: str = field(default="0.0.0.0", metadata={"help": "edge VLM server bind host"})
     edge_vlm_port: int = field(default=26000, metadata={"help": "edge VLM server port"})
