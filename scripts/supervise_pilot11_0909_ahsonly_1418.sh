@@ -1,8 +1,9 @@
 #!/bin/bash
 # 自愈 supervisor: AHS-only 1418 行。崩溃(如空图 cv2.imwrite)后自动续跑。
 # 停止条件: 跑满 TARGET / 连续一次重试无进展(疑似确定性崩溃，避免空转)
-LAUNCHER=/HDD1/code/TravelUAV/scripts/eval_pilot11_0909_ahsonly_1418.sh
-SAVE=/HDD1/code/TravelUAV/eval_drl_pilot11_0909_ahsonly_1418_fast_x10
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LAUNCHER="${ROOT_DIR}/scripts/eval_pilot11_0909_ahsonly_1418.sh"
+SAVE="${ROOT_DIR}/eval_drl_pilot11_0909_ahsonly_1418_fast_x10"
 TARGET=1418
 SLOG=/tmp/pilot11_ahsonly_1418_supervisor.log
 cnt() { ls -d ${SAVE}/*/ 2>/dev/null | grep -vE "/profile_logs/" | wc -l; }

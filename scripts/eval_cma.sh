@@ -2,7 +2,7 @@
 # CMA model evaluation on TravelUAV dataset
 # Usage: bash scripts/eval_cma.sh
 
-root_dir=.  # TravelUAV directory
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Use ckpt.49 (epoch 49, converged: mean loss ~0.055)
 CKPT_DIR=20260627-014453-749496
@@ -19,7 +19,7 @@ CMA_EVAL_ONLY=1 CMA_TELEPORT=1 CUDA_VISIBLE_DEVICES=0 python -u $root_dir/src/vl
     --use_gt False \
     --maxWaypoints 200 \
     --dataset_path /mnt/zt-hdd2/TravelUAV_dataset/TravelUAV_data/ \
-    --eval_save_path /HDD1/code/TravelUAV/eval_output_cma_v2 \
+    --eval_save_path "${root_dir}/eval_output_cma_v2" \
     --eval_json_path /mnt/zt-hdd2/TravelUAV_dataset/TravelUAV_data_json/data/uav_dataset/seen_valset.json \
     --map_spawn_area_json_path /mnt/zt-hdd2/TravelUAV_dataset/TravelUAV_data_json/data/meta/map_spawnarea_info.json \
     --object_name_json_path /mnt/zt-hdd2/TravelUAV_dataset/TravelUAV_data_json/data/meta/object_description.json \
