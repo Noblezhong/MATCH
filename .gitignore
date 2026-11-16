@@ -79,3 +79,7 @@ closeloop_envs
 evaluations/
 training/
 models/
+eval_aerodpo_stopgo*/
+eval_aerodpo_llamacpp*/
+profile_logs/
+native/aerodpo_llamacpp_local/build/

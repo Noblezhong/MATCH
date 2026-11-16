@@ -110,6 +110,10 @@ class CommonArguments:
         default=100,
         metadata={"help": "max episodes per scene before forced UE4 restart"},
     )
+    allow_nonstandard_eval_count: bool = field(
+        default=False,
+        metadata={"help": "allow smoke-test splits that do not contain 1,418 episodes"},
+    )
     
 @dataclass
 class DataArguments:
@@ -126,6 +130,12 @@ class DataArguments:
 @dataclass
 class ModelArguments:
     model_path: Optional[str] = field(default="facebook/opt-350m")
+    base_model_path: Optional[str] = field(default=None)
+    aerodpo_backend: str = field(default="pytorch", metadata={"help": "AeroDPO backend: pytorch or llamacpp_local"})
+    llama_text_model_path: Optional[str] = field(default=None, metadata={"help": "local llama.cpp text GGUF (BF16 or Q8)"})
+    llama_mmproj_path: Optional[str] = field(default=None, metadata={"help": "local llama.cpp BF16 mmproj GGUF"})
+    llama_local_bridge_path: Optional[str] = field(default=None, metadata={"help": "local llama.cpp ctypes bridge shared library"})
+    llama_local_context: int = field(default=2048, metadata={"help": "local llama.cpp context size"})
     model_base: Optional[str] = field(default=None)
     traj_model_path: Optional[str] = field(default=None)
     vision_tower: Optional[str] = field(default=None)
