@@ -7,7 +7,8 @@ single, verified aggregation protocol:
 
   SR / OSR / NE / control steps / logical E2E
       from episode_end records (identical for every paradigm)
-  CR   episode_end.collision AND any logged frame has_collided
+  CR   versioned episode_end.cr_collision for new runs; legacy logs use
+       episode_end.collision AND any logged frame has_collided
        (scans <eval_dir>/<episode>/log/*.json). This is the operational
        definition used in Tables 1 and 3: the terminal flag also covers
        proximity/stall/timeout outcomes, while AirSim collision events can
@@ -444,22 +445,30 @@ def build_result(
     expected_episodes: int = 1418,
 ) -> dict:
     episodes = []
-    airsim = scan_airsim_collision(eval_dir, set(terminals))
+    policies = {r.get("collision_policy", "legacy_terminal_and_saved_frame") for r in terminals.values()}
+    if len(policies) != 1:
+        raise ValueError("mixed collision policies: split old and new evaluation inputs")
+    collision_policy = next(iter(policies))
+    if collision_policy not in {"legacy_terminal_and_saved_frame", "episode_collision_v1"}:
+        raise ValueError(f"unsupported collision policy: {collision_policy}")
+    if collision_policy == "episode_collision_v1" and any(type(r.get("cr_collision")) is not bool for r in terminals.values()):
+        raise ValueError("new collision policy requires boolean cr_collision for every episode")
+    airsim = scan_airsim_collision(eval_dir, set(terminals)) if collision_policy == "legacy_terminal_and_saved_frame" else {}
     for ep in sorted(terminals):
         terminal = terminals[ep]
         ev = events.get(ep, {"shifts": [], "wait_ms": 0.0})
         shifts = ev["shifts"]
-        # Published Tables 1/3 CR: terminal flag AND any logged AirSim flag.
-        # Keep both component flags below so reset/read-clear effects remain auditable.
+        # New runs use the shared episode collision policy; legacy evidence
+        # fields remain visible for historical report compatibility.
         has_airsim = bool(airsim.get(ep, False))
         episodes.append(
             {
                 "episode_id": ep,
                 "success": int(bool(terminal.get("success"))),
                 "oracle_success": int(bool(terminal.get("oracle_success"))),
-                "collision": int(bool(terminal.get("collision")) and has_airsim),
+                "collision": int(terminal["cr_collision"]) if collision_policy == "episode_collision_v1" else int(bool(terminal.get("collision")) and has_airsim),
                 "episode_end_collision": int(bool(terminal.get("collision"))),
-                "airsim_collision": int(has_airsim),
+                "airsim_collision": int(bool(terminal.get("cr_airsim_collision"))) if collision_policy == "episode_collision_v1" else int(has_airsim),
                 "navigation_error": _number(terminal, "final_ne_m"),
                 "e2e_latency_s": (
                     _number(terminal, "logical_elapsed_ms") / 1000.0
@@ -477,6 +486,7 @@ def build_result(
     if n == 0:
         raise ValueError("no terminal episodes found")
     summary = {
+        "collision_policy": collision_policy,
         "SR": sum(e["success"] for e in episodes) / n,
         "OSR": sum(e["oracle_success"] for e in episodes) / n,
         "CR": sum(e["collision"] for e in episodes) / n,
@@ -509,7 +519,7 @@ def build_result(
     if missing_shifts and method != "stopgo":
         warnings.append(f"{len(missing_shifts)} episodes without shift samples")
     unscanned = [e["episode_id"] for e in episodes if e["episode_id"] not in airsim]
-    if unscanned:
+    if unscanned and collision_policy == "legacy_terminal_and_saved_frame":
         warnings.append(f"{len(unscanned)} episodes without AirSim frame scan (CR counted as no collision)")
 
     return {
@@ -587,6 +597,7 @@ def main() -> None:
     events: dict = {}
     records = 0
     duplicate_terminals = 0
+    input_collision_policies = set()
     for input_path in inputs:
         if method == "continuous":
             file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "continuous", wait_mode)
@@ -594,6 +605,9 @@ def main() -> None:
             file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "stopgo", wait_mode)
         else:
             file_terminals, file_events, file_records = EXTRACTORS[method](input_path, invalid)
+        input_collision_policies.update(r.get("collision_policy", "legacy_terminal_and_saved_frame") for r in file_terminals.values())
+        if len(input_collision_policies) > 1:
+            raise ValueError("mixed collision policies across input segments")
         records += file_records
         duplicate_terminals += len(set(terminals).intersection(file_terminals))
         terminals.update(file_terminals)

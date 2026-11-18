@@ -401,13 +401,13 @@ class DRLSchedulerEnv(gym.Env):
         self.episode_records = []
         self.episode_start_perf = time.perf_counter()
         self.state = ContinuousEpisodeState(self.env_batch[0], self.eval_env, self.assist, ignore_tiny_diff=True)
-        self.clock.reset()
+        self.clock.reset(self.eval_env.initial_obs_latency_ms)
         # 每集带宽起点按场景哈希固定 + 按（逻辑）时间推进：
         # 同一场景在任何运行、任何时刻都看到同一带宽曲线（跨范式公平的前提）
         _seq = self.env_batch[0].get("seq_name") if self.env_batch else None
         if _seq is not None:
             self.bandwidth_trace.reset_for_episode(_seq)
-        self._bw_t0_ms = float(self.clock.now_ms) if self.clock.enabled else time.perf_counter() * 1000.0
+        self._bw_t0_ms = 0.0  # same episode origin as FastEvalClock
         self.planner = FixedBandwidthEdgePlanner(
             self.model_wrapper,
             self.enable_comm_delay,
@@ -422,8 +422,11 @@ class DRLSchedulerEnv(gym.Env):
         self.scheduler_step_count = 0
         self._safety_last_threshold = None
 
+        self.initial_uplink_start_ms = float(self.clock.now_ms)
         observed_bw = self._sample_bandwidth()
-        snapshot = self.state.build_snapshot(self.request_counter, self.control_step)
+        snapshot = self.state.build_snapshot(
+            self.request_counter, self.control_step, obs_latency_ms=self.eval_env.initial_obs_latency_ms
+        )
         snapshot.submitted_logical_ms = self.clock.now_ms if self.clock.enabled else None
         self.request_counter += 1
         assert self.planner.submit(snapshot, observed_bw)
@@ -444,6 +447,7 @@ class DRLSchedulerEnv(gym.Env):
             if self.clock.enabled
             else (time.perf_counter() - wait_start) * 1000.0
         )
+        self.initial_uplink_latency_ms = float(result.uplink_latency_ms)
         self._apply_result(result)
         self._log_record(
             record_type="decision",
@@ -679,22 +683,9 @@ class DRLSchedulerEnv(gym.Env):
         return True, None
 
     def _sample_bandwidth(self) -> float:
-        if bool(getattr(args, "scheduler_train_bw_iid", False)):
-            # todo#4: TRAINING-only i.i.d. bandwidth. Each step independently
-            # samples log-uniform(5,400) Mbps, breaking the time-anchored
-            # "low bandwidth ≈ stuck episode" coupling so the policy can learn
-            # the true bandwidth→request mapping. Eval never sets this flag,
-            # so evaluation still walks the real ucc4g trace.
-            lo_mbps, hi_mbps = 5.0, 400.0
-            bw_mbps = float(np.exp(np.random.uniform(np.log(lo_mbps), np.log(hi_mbps))))
-            self.last_observed_bandwidth_bps = bw_mbps * 1e6
-            return self.last_observed_bandwidth_bps
         # 按（逻辑）时间对齐采样：带宽 = trace[本集起点 + 已过逻辑秒]，而非按步数推进。
         # 悬停长等待期间时间照样流逝，策略看到的是真实时间轴上的网络演化。
-        now_ms = (
-            float(self.clock.now_ms) if self.clock.enabled
-            else time.perf_counter() * 1000.0
-        )
+        now_ms = float(self.clock.now_ms)
         elapsed_ms = now_ms - getattr(self, "_bw_t0_ms", now_ms)
         self.last_observed_bandwidth_bps = float(self.bandwidth_trace.bandwidth_at_ms(elapsed_ms))
         return self.last_observed_bandwidth_bps
@@ -704,10 +695,7 @@ class DRLSchedulerEnv(gym.Env):
         submit time, anchored to the same per-episode logical-time origin as
         _sample_bandwidth.  Never fires for all-positive traces."""
         def resolve():
-            now_ms = (
-                float(self.clock.now_ms) if self.clock.enabled
-                else time.perf_counter() * 1000.0
-            )
+            now_ms = float(self.clock.now_ms)
             elapsed_ms = now_ms - getattr(self, "_bw_t0_ms", now_ms)
             return self.bandwidth_trace.outage_resume_ms(elapsed_ms)
         return resolve
@@ -1094,13 +1082,13 @@ class DRLSchedulerEnv(gym.Env):
     def _finalize_episode(self, terminal_reason: Optional[str]) -> None:
         assert self.state is not None
         self.state.maybe_finalize(force=True)
-        episode_latency_ms = (
-            float(self.clock.now_ms)
-            if self.clock.enabled
-            else float((time.perf_counter() - self.episode_start_perf) * 1000.0)
-        )
+        episode_latency_ms = float(self.clock.now_ms)
         record = {
             "record_type": "episode_end",
+            **self.state.cr_state.metadata(),
+            "initial_obs_latency_ms": float(self.eval_env.initial_obs_latency_ms),
+            "initial_uplink_start_logical_ms": self.initial_uplink_start_ms,
+            "initial_uplink_latency_ms": float(self.initial_uplink_latency_ms),
             "episode_idx": int(self.episode_idx),
             "seq_names": [self.env_batch[0]["seq_name"]] if self.env_batch else [],
             "map_names": [self.env_batch[0]["map_name"]] if self.env_batch else [],

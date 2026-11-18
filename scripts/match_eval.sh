@@ -15,7 +15,7 @@ RUN_ID="${RUN_ID:-$(date +%m%d-%H%M)}"
 DATASET_PATH="${DATASET_PATH:-/HDD2/TravelUAV_dataset/TravelUAV_data}"
 EVAL_JSON_PATH="${EVAL_JSON_PATH:-${DATASET_PATH}/data/uav_dataset/seen_valset.json}"
 EVAL_SAVE_PATH="${EVAL_SAVE_PATH:-${ROOT_DIR}/eval_match_ncn_${RUN_ID}_fast_x10}"
-SCHEDULER_MODEL_PATH="${SCHEDULER_MODEL_PATH:-${ROOT_DIR}/drl_train_0722-1254/scheduler_models/ppo_scheduler_20260722-125409-242489.zip}"
+SCHEDULER_MODEL_PATH="${SCHEDULER_MODEL_PATH:-${ROOT_DIR}/drl_train_pilot11_0909-2109/scheduler_models/ppo_scheduler_20260909-210915-662188.zip}"
 
 export NCN_DISABLE_BITSANDBYTES="${NCN_DISABLE_BITSANDBYTES:-1}"
 export PYTHONPATH="${ROOT_DIR}/tools/ncn_python_shim${PYTHONPATH:+:${PYTHONPATH}}"

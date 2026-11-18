@@ -75,7 +75,9 @@ def generate_vision_tower_config(vision_tower, image_processor):
     }
     default_vision_config['image_processor'] = image_processor
     default_vision_config['mm_vision_tower'] = vision_tower
-    cf_path = os.path.join(os.path.split(vision_tower)[0], 'config.json')
+    config_dir = os.environ.get('MATCH_RUNTIME_CONFIG_DIR', os.path.dirname(vision_tower))
+    os.makedirs(config_dir, exist_ok=True)
+    cf_path = os.path.join(config_dir, 'config.json')
     with open(cf_path, 'w') as f:
         json.dump(default_vision_config, f, indent=2)
     return cf_path
@@ -193,10 +195,6 @@ class DataArguments:
     refine_prompt: Optional[bool] = field(default=False)
     mm_use_im_start_end: bool = field(default=False)
 
-@dataclass
-class CommonArguments:
-    model_path: Optional[str] = field(default="facebook/opt-350m")
-    model_base: Optional[str] = field(default=None)
 
 def preprocess_multimodal(
     sources: Sequence[str],

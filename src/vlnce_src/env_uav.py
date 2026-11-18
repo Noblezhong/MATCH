@@ -24,34 +24,6 @@ RGB_FOLDER = ['frontcamera', 'leftcamera', 'rightcamera', 'rearcamera', 'downcam
 DEPTH_FOLDER = [name + '_depth' for name in RGB_FOLDER]
 
 from scipy.spatial.transform import Rotation as R
-def project_target_state2global_state_axis(this_target_state, target_state):
-    def to_eularian_angles(q):
-        x,y,z,w = q
-        ysqr = y * y
-        t0 = +2.0 * (w*x + y*z)
-        t1 = +1.0 - 2.0*(x*x + ysqr)
-        roll = math.atan2(t0, t1)
-        t2 = +2.0 * (w*y - z*x)
-        if (t2 > 1.0):
-            t2 = 1
-        if (t2 < -1.0):
-            t2 = -1.0
-        pitch = math.asin(t2)
-        t3 = +2.0 * (w*z + x*y)
-        t4 = +1.0 - 2.0 * (ysqr + z*z)
-        yaw = math.atan2(t3, t4)
-        return (pitch, roll, yaw)
-    def euler_to_rotation_matrix(e):
-        rotation = R.from_euler('xyz', e, degrees=False)
-        return rotation.as_matrix()
-    start_pos = target_state['position']
-    start_eular = to_eularian_angles(target_state['orientation'])
-    this_pos = this_target_state['position']
-    this_eular = to_eularian_angles(this_target_state['orientation'])
-    rot = euler_to_rotation_matrix(start_eular) 
-    this_global_pos = np.linalg.inv(rot).T @ np.array(this_pos) + np.array(start_pos)
-    this_global_eular = np.array(this_eular) + np.array(start_eular)
-    return {'position': this_global_pos.tolist(), 'orientation': this_global_eular.tolist()}
 
 def prepare_object_map():
     with open(args.map_spawn_area_json_path, 'r') as f:
@@ -88,7 +60,6 @@ class AirVLNENV:
         self.dataset_path = dataset_path
         self.eval_json_path = eval_json_path
         self.seed = seed
-        self.collected_keys = set()
         self._last_frames = None  # last-known-good (rgb,depth,state,rec_rgb,rec_depth) per batch slot
         self.dataset_group_by_scene = dataset_group_by_scene
         self.activate_maps = set(activate_maps)
@@ -206,18 +177,8 @@ class AirVLNENV:
                 self.index_data += 1
                 continue
 
-            if args.run_type in ['collect', 'train'] and args.collect_type in ['dagger', 'SF']:
-                
-                _key = '{}_{}'.format(new_trajectory['seq_name'], data_it)
-                if _key in self.collected_keys:
-                    self.index_data += 1
-                    continue
-                else:
-                    batch.append(new_trajectory)
-                    self.index_data += 1
-            else:
-                batch.append(new_trajectory)
-                self.index_data += 1
+            batch.append(new_trajectory)
+            self.index_data += 1
 
             if len(batch) == self.batch_size:
                 break 
@@ -329,30 +290,10 @@ class AirVLNENV:
         results = self.simulator_tool.setPoses(poses=poses)
         results = self.simulator_tool.setPoses(poses=poses)
         results = self.simulator_tool.setPoses(poses=poses)
+        self.simulator_tool.begin_episode_collision_tracking()
         state_info_results = self.simulator_tool.getSensorInfo()
         if state_info_results is None:
-            # scene(s) wedged at episode start: seed trajectory from spawn pose instead of dying
-            logger.warning('getSensorInfo failed (scene wedged), seeding trajectory from spawn pose')
-            state_info_results = []
-            _c0 = 0
-            for _i1, _item in enumerate(self.machines_info):
-                state_info_results.append([])
-                for _i2 in range(len(_item['open_scenes'])):
-                    _p, _r = start_position_list[_c0], start_rotation_list[_c0]
-                    state_info_results[_i1].append({'sensors': {'state': {
-                        'position': list(_p), 'orientation': list(_r),
-                        'linear_velocity': [0.0, 0.0, 0.0], 'linear_acceleration': [0.0, 0.0, 0.0],
-                        'angular_velocity': [0.0, 0.0, 0.0], 'angular_acceleration': [0.0, 0.0, 0.0],
-                        'collision': {'has_collided': False, 'object_name': ''},
-                        'gps_location': [0.0, 0.0, 0.0], 'timestamp': 0,
-                    }, 'imu': {
-                        'time_stamp': 0,
-                        'rotation': [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                        'orientation': [0.0, 0.0, 0.0, 1.0],
-                        'linear_acceleration': [0.0, 0.0, 0.0],
-                        'angular_velocity': [0.0, 0.0, 0.0],
-                    }}})
-                    _c0 += 1
+            raise RuntimeError("initial AirSim collision baseline unavailable; retry episode")
 
         cnt = 0
         for index_1, item in enumerate(self.machines_info):
@@ -527,83 +468,15 @@ class AirVLNENV:
                 cnt += 1
         return states
 
-    def _get_current_pose(self) -> list:
-        poses = []
-        cnt = 0
-        for index_1, item in enumerate(self.machines_info):
-            poses.append([])
-            for index_2, _ in enumerate(item['open_scenes']):
-                poses[index_1].append(
-                    self.sim_states[cnt].pose
-                )
-                cnt += 1
-        return poses
 
     def reset(self):
         self.changeToNewTrajectorys()
-        return self.get_obs()
+        obs_start = time.perf_counter()
+        outputs = self.get_obs()
+        self.initial_obs_latency_ms = (time.perf_counter() - obs_start) * 1000.0
+        return outputs
 
-    def revert2frame(self, index):
-        self.sim_states[index].revert2frames()
         
-    def makeActions(self, waypoints_list):
-        waypoints_args = []
-        cnt = 0
-        for index_1, item in enumerate(self.machines_info):
-            waypoints_args.append([])
-            for index_2, _ in enumerate(item['open_scenes']):
-                waypoints_args[index_1].append(waypoints_list[cnt])
-                cnt += 1
-        start_states = self._get_current_state()
-        if os.environ.get('CMA_EVAL_ONLY') == '1':
-            # CMA: pass single [x,y,z,yaw], not [[x,y,z,yaw]]
-            cma_targets = [[wp[0] for wp in scene_wps] for scene_wps in waypoints_args]
-            results = self.simulator_tool.move_to_position(target_poses=cma_targets, start_states=start_states)
-        else:
-            results = self.simulator_tool.move_path_by_waypoints(waypoints_list=waypoints_args, start_states=start_states)
-        if results is None:
-            raise Exception('move on path error.')
-        batch_results = []
-        batch_iscollision = []
-        self.last_action_timings = []
-        for index_1, item in enumerate(self.machines_info):
-            for index_2, _ in enumerate(item['open_scenes']):
-                batch_results.append(results[index_1][index_2]['states'])
-                batch_iscollision.append(results[index_1][index_2]['collision'])
-                self.last_action_timings.append({
-                    'wall_time_ms': float(results[index_1][index_2].get('wall_time_ms', 0.0)),
-                    'sim_time_ms': float(results[index_1][index_2].get('sim_time_ms', 0.0)),
-                })
-        # When the server returns less than 5 points (collision or environment blockage), fill it to a length of 5
-        for batch_idx, batch_result in enumerate(batch_results):
-            if os.environ.get('CMA_EVAL_ONLY') == '1':
-                # CMA: single state per discrete step is normal; pad without forcing collision.
-                # The collision flag already comes from move_to_position result.
-                if len(batch_result) < 5:
-                    batch_result.extend([copy.deepcopy(batch_result[-1]) for _ in range(5 - len(batch_result))])
-                elif len(batch_result) == 0:
-                    batch_result.extend([copy.deepcopy(self.sim_states[batch_idx].trajectory[-1]) for _ in range(5)])
-            elif 0 < len(batch_result) < 5:
-                batch_result.extend([copy.deepcopy(batch_result[-1]) for i in range(5 - len(batch_result))])
-                batch_iscollision[batch_idx] = True
-            elif len(batch_result) == 0:
-                batch_result.extend([copy.deepcopy(self.sim_states[batch_idx].trajectory[-1]) for i in range(5)])
-                batch_iscollision[batch_idx] = True
-        for index, waypoints in enumerate(waypoints_list):
-            for waypoint in stop_executed_waypoints(waypoints): # check stop
-                if np.linalg.norm(np.array(waypoint[0:3]) - np.array(self.batch[index]['object_position'])) < self.sim_states[index].SUCCESS_DISTANCE:
-                    self.sim_states[index].oracle_success = True
-                elif self.sim_states[index].step >= int(args.maxWaypoints):
-                    self.sim_states[index].is_end = True
-            if self.sim_states[index].is_end == True:
-                waypoints = [self.sim_states[index].pose[0:3]] * len(waypoints)
-            self.sim_states[index].step += 1
-            self.sim_states[index].trajectory.extend(batch_results[index])  # [xyzxyzw]...
-            self.sim_states[index].pre_waypoints = waypoints
-            self.sim_states[index].is_collisioned = batch_iscollision[index]
-        
-        self.update_measurements()
-        return batch_results
 
     def makeActionsChunk(self, waypoints_list, target_idx):
         waypoints_args = []

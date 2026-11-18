@@ -27,6 +27,7 @@ from src.vlnce_src.comm_delay import (
     calculate_latency_ms,
     default_trace_path,
     estimate_uplink_payload_bits_from_outputs,
+    estimate_uplink_payload_bits_from_episodes,
 )
 from src.vlnce_src.dino_monitor_online import DinoMonitor
 from src.vlnce_src.fast_eval_time import (
@@ -116,18 +117,23 @@ def eval(
                             ignore_tiny_diff=True,
                         )
                         episode_clock = FastEvalClock(fast_eval, args.fast_eval_speedup)
-                        bw_t0_ms = float(episode_clock.now_ms)
+                        episode_clock.reset(eval_env.initial_obs_latency_ms)
+                        bw_t0_ms = 0.0
+                        initial_uplink_start_ms = float(episode_clock.now_ms)
+                        _, initial_payload_bits, initial_payload_mb = estimate_uplink_payload_bits_from_episodes(batch_state.episodes)
+                        initial_bandwidth_bps = bandwidth_trace.bandwidth_at_ms(initial_uplink_start_ms)
+                        initial_uplink_ms = calculate_latency_ms(initial_payload_bits, initial_bandwidth_bps) if enable_comm_delay else 0.0
+                        if fast_eval:
+                            episode_clock.advance_blocking(initial_uplink_ms)
+                        elif initial_uplink_ms > 0:
+                            time.sleep(initial_uplink_ms / 1000.0)
                         completed_decisions = 0
                         executed_control_steps = 0
                         pbar.update(n=eval_env.batch_size)
                         assist_notices = None
 
-                        for t in range(int(args.maxWaypoints) + 1):
+                        for t in range(int(args.maxWaypoints)):
                             logger.info("Step: {} \t Completed: {} / {}".format(t, int(eval_env.index_data) - int(eval_env.batch_size), end_iter))
-
-                            is_terminate = batch_state.check_batch_termination(t)
-                            if is_terminate:
-                                break
 
                             seq_names = [item["seq_name"] for item in env_batchs]
                             map_names = [item["map_name"] for item in env_batchs]
@@ -173,7 +179,8 @@ def eval(
                             episode_clock.advance_blocking(obs_latency_ms)
 
                             payload_bytes, payload_bits, payload_mb = estimate_uplink_payload_bits_from_outputs(outputs)
-                            bandwidth_bps = bandwidth_trace.bandwidth_at_ms(float(episode_clock.now_ms) - bw_t0_ms)
+                            uplink_start_ms = float(episode_clock.now_ms)
+                            bandwidth_bps = bandwidth_trace.bandwidth_at_ms(uplink_start_ms - bw_t0_ms)
                             uplink_latency_ms = calculate_latency_ms(payload_bits, bandwidth_bps) if enable_comm_delay else 0.0
                             loop_without_comm_ms = float((time.perf_counter() - step_start) * 1000.0)
                             if uplink_latency_ms > 0 and not fast_eval:
@@ -212,6 +219,7 @@ def eval(
                                 "obs_latency_ms": obs_latency_ms,
                                 "groundingdino_latency_ms": dino_latency_ms,
                                 "loop_latency_ms": loop_without_comm_ms,
+                                "uplink_start_logical_ms": uplink_start_ms,
                                 "uplink_payload_bits": int(payload_bits),
                                 "uplink_payload_mb": float(payload_mb),
                                 "uplink_bandwidth_mbps": float(bandwidth_bps / 1_000_000.0),
@@ -233,9 +241,23 @@ def eval(
                             _write_jsonl_line(profile_fp, profile_info)
                             summary_records.append(profile_info)
                             _print_profile_line(t, profile_info)
+                            if any(batch_state.dones):
+                                batch_state.maybe_finalize()
+                                break
+                        # Preserve the original decision budget and finalize on budget exhaustion.
+                        for i in range(batch_state.batch_size):
+                            batch_state.dones[i] = True
+                        batch_state.maybe_finalize(force=True)
                         for batch_idx, env_batch in enumerate(env_batchs):
                             episode_record = {
                                 "record_type": "episode_end",
+                                **batch_state.cr_states[batch_idx].metadata(),
+                                "initial_obs_latency_ms": float(eval_env.initial_obs_latency_ms),
+                                "initial_uplink_start_logical_ms": initial_uplink_start_ms,
+                                "initial_uplink_payload_bits": int(initial_payload_bits),
+                                "initial_uplink_payload_mb": float(initial_payload_mb),
+                                "initial_uplink_bandwidth_mbps": float(initial_bandwidth_bps / 1e6),
+                                "initial_uplink_latency_ms": float(initial_uplink_ms),
                                 "seq_names": [env_batch["seq_name"]],
                                 "map_names": [env_batch["map_name"]],
                                 "decision_steps": int(completed_decisions),
@@ -281,6 +303,7 @@ def eval(
         "loop_latency_with_comm_ms": _metric_summary([item["loop_latency_with_comm_ms"] for item in summary_records]),
         "decision_latency_ms": _metric_summary([item["decision_latency_ms"] for item in summary_records]),
         "episode_latency_ms": _metric_summary(episode_latencies_ms),
+        "initial_uplink_latency_ms": _metric_summary([item["initial_uplink_latency_ms"] for item in episode_records]),
         "decision_steps": _metric_summary(
             [item["decision_steps"] for item in episode_records]
         ),

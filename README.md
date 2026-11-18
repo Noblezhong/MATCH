@@ -1,8 +1,6 @@
 <div align="center">
 <h1>Towards Realistic UAV Vision-Language Navigation: Platform, Benchmark, and Methodology</h1>
 
-<image src="./header.png" width="70%">
-
 <a href="https://arxiv.org/abs/2410.07087"><img src='https://img.shields.io/badge/arXiv-TRAVEL: UAV VLN Platform, Benchmark, and Methodology-red' alt='Paper PDF'></a>
 <a href='https://prince687028.github.io/Travel/'><img src='https://img.shields.io/badge/Project_Page-TRAVEL-green' alt='Project Page'></a>
 <a href='https://huggingface.co/datasets/wangxiangyu0814/TravelUAV'><img src='https://img.shields.io/badge/Dataset-TRAVEL-blue'></a>
@@ -105,25 +103,45 @@ python AirVLNSimulatorServerTool.py --port 30000 --root_path /path/to/your/envs
 
 2. run close-loop simulation
 
-Once the simulator server is running, you can execute the dagger or evaluation script.
+Once the simulator server is running, you can execute the evaluation script.
 
 ```bash
-# Dagger NYC
-bash scripts/dagger_NYC.sh
 # Eval
 bash scripts/eval.sh
-bash scripts/metrics.sh
+python scripts/compute_metrics.py --help
 ```
 
 ## NCN / Q8 AeroDPO
 
-The `edge-collab-vln` branch includes the local Q8 AeroDPO NCN fallback used
-by `Continuous-only + NCN` and `Stop-go + NCN`.  Model weights and generated
-GGUF files are intentionally not tracked.  Before running either evaluator on
-a new machine, follow [the 5090 deployment guide](docs/NCN_5090_DEPLOYMENT.md)
-to compile the pinned llama.cpp version, generate the local Q8 artifacts from
-the original Qwen base plus AeroDPO adapter, build the bridge, and run smoke
-validation.
+The NCN evaluators use the local AeroDPO bridge in
+`native/aerodpo_llamacpp_local`. Model weights and generated GGUF files
+are not tracked. The one-time preparation and build tools are
+`tools/prepare_aerodpo_llamacpp.py` and
+`tools/build_aerodpo_llamacpp_local.sh`.
+
+## Seen284 Stop-go evaluation
+
+`eval_subsets/seen_valset_stratified284_seed20261117.json` is the shared
+284-episode index for all paradigms. Its selection manifest and report record
+the seed, scene quotas, length strata, and selected UUIDs; dataset contents
+remain external.
+
+```bash
+bash scripts/eval_stopgo_seen284.sh
+```
+
+The launcher uses the configured 5090 model/runtime paths and 4090 AirSim
+server. It checks mounts, runs the 3-episode smoke evaluation, then the complete
+284 episodes and `scripts/compute_metrics.py`. Results are written by 5090
+through `/home/noble/mnt/R1_new_experiment` into
+`/HDD1/code/R1_new_experiment` on the simulator host, under
+`eval_stop_go_seen284_MMDD-HHMM_fastx10`. Configure the host paths and
+mounts before using another machine.
+
+The shared logical clock includes initial observation capture and upload.
+New runs use the shared `episode_collision_v1` CR policy: validated AirSim
+collision, waypoint timeout, or depth collision. A raw AirSim collision flag
+that is already set at episode start remains suppressed until it clears.
 
 # Paper
 

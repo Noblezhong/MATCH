@@ -46,35 +46,21 @@ class CommonArguments:
         default=False,
         metadata={"help": "MATCH experiment flag: resume AHS on the existing in-flight edge result"},
     )
-    edge_vlm_host: str = field(default="127.0.0.1", metadata={"help": "edge VLM server host"})
-    edge_vlm_bind_host: str = field(default="0.0.0.0", metadata={"help": "edge VLM server bind host"})
-    edge_vlm_port: int = field(default=26000, metadata={"help": "edge VLM server port"})
-    coarse_goal_min_distance: float = field(default=0.5, metadata={"help": "deprecated; accepted for old edge DNN scripts but no longer used"})
     scheduler_model_path: Optional[str] = field(default=None, metadata={"help": "PPO scheduler model path for DRL scheduler eval"})
-    scheduler_total_episodes: int = field(default=200, metadata={"help": "total episodes for DRL scheduler training (primary stopping criterion)"})
-    scheduler_total_timesteps: int = field(default=100000, metadata={"help": "max PPO timesteps for DRL scheduler training (safety cap)"})
     scheduler_max_steps: int = field(default=800, metadata={"help": "max scheduler decisions per episode for DRL scheduler"})
-    scheduler_learning_rate: float = field(default=0.0003, metadata={"help": "PPO learning rate for DRL scheduler"})
-    scheduler_n_steps: int = field(default=64, metadata={"help": "PPO rollout n_steps for DRL scheduler"})
-    scheduler_batch_size: int = field(default=32, metadata={"help": "PPO batch size for DRL scheduler"})
-    scheduler_gamma: float = field(default=0.99, metadata={"help": "PPO discount factor for DRL scheduler"})
     scheduler_time_norm_ms: float = field(default=5000.0, metadata={"help": "reward normalization T0 for scheduler elapsed time"})
     scheduler_drift_norm_m: float = field(default=2.5, metadata={"help": "reward normalization delta0 for scheduler state drift"})
     scheduler_time_weight: float = field(default=1.0, metadata={"help": "reward weight for scheduler elapsed time (r_task time penalty)"})
-    scheduler_train_bw_iid: bool = field(default=False, metadata={"help": "todo#4: TRAINING-only i.i.d. bandwidth — each step samples log-uniform(5,400) Mbps, decoupling bandwidth from the time-anchored trace so the policy learns the true bandwidth→request mapping; eval keeps the real ucc4g trace"})
     scheduler_success_reward: float = field(default=40.0, metadata={"help": "terminal reward for SR navigation success"})
     scheduler_oracle_success_reward: float = field(default=20.0, metadata={"help": "terminal reward for OSR-only navigation success"})
     scheduler_collision_penalty: float = field(default=20.0, metadata={"help": "terminal penalty for collision"})
     scheduler_failure_penalty: float = field(default=10.0, metadata={"help": "terminal penalty for failure or maxWaypoints"})
     scheduler_illegal_action_penalty: float = field(default=5.0, metadata={"help": "penalty for choosing an illegal action in the current state"})
     scheduler_idle_wait_ms: float = field(default=100.0, metadata={"help": "small hover duration for STOP_NO_REQUEST when no request is in flight"})
-    scheduler_ent_coef: float = field(default=0.01, metadata={"help": "PPO entropy coefficient for exploration"})
     enable_ncn: bool = field(default=False, metadata={"help": "enable local AeroDPO NCN fallback"})
     ncn_response_ema_alpha: float = field(default=0.5, metadata={"help": "EMA alpha for predicted edge compute time"})
     ncn_response_safety_margin_ms: float = field(default=0.0, metadata={"help": "extra logical-time margin before NCN takeover"})
     ncn_max_consecutive_actions: int = field(default=200, metadata={"help": "safety cap for consecutive NCN actions while edge guidance is pending"})
-    scheduler_vf_coef: float = field(default=0.5, metadata={"help": "PPO value function coefficient (0.2 = stabilized Critic)"})
-    scheduler_seed: Optional[int] = field(default=None, metadata={"help": "PPO seed for reproducible baseline/pilot runs (None = random)"})
     # --- pilot11 continuous shaping (weights default 0.0 = inactive; activate via train/eval scripts) ---
     scheduler_req_bw_thresh_mbps: float = field(default=25.0, metadata={"help": "pilot7: bandwidth reference in Mbps; bw_term = w·clip((bw−ref)/ref,−1,+1)"})
     scheduler_req_buf_thresh: float = field(default=3.0, metadata={"help": "pilot7: buffer reference; buffer > this counts as 'sufficient' (requesting it is penalized)"})
@@ -87,34 +73,18 @@ class CommonArguments:
     ncn_edge_timeout_ms: float = field(default=0.0, metadata={"help": "optional logical edge timeout for NCN takeover; 0 disables it"})
     ncn_outage_duration_ms: float = field(default=0.0, metadata={"help": "optional outage immediately after cold start; 0 disables it"})
 
-    dagger_it: int = field(default=1)
-    epochs: int = field(default=10)
-    lr: float = field(default=0.00025, metadata={"help": "learning rate"})
     batchSize: int = field(default=8)
-    trainer_gpu_device: int = field(default=0, metadata={"help": 'GPU'})
 
-    inflection_weight_coef: float = field(default=1.9)
 
-    dagger_mode_load_scene: List[str] = field(default_factory=list)
-    dagger_update_size: int = field(default=8000)
-    dagger_mode: str = field(default="end", metadata={"help": 'dagger mode in [end middle nearest]'})
-    dagger_p: float = field(default=1.0, metadata={"help": 'dagger p'})
 
-    tokenizer_use_bert: bool = field(default=True)
 
     simulator_tool_host: str = field(default="127.0.0.1", metadata={"help": "simulator_tool host"})
     simulator_tool_port: int = field(default=30000, metadata={"help": "simulator_tool port"})
     DDP_MASTER_PORT: int = field(default=20001, metadata={"help": "DDP MASTER_PORT"})
 
-    continue_start_from_dagger_it: Optional[int] = field(default=None)
-    continue_start_from_checkpoint_path: Optional[str] = field(default=None)
 
-    vlnbert: bool = field(default=False)
-    featdropout: float = field(default=0.4)
-    action_feature: int = field(default=32)
     
     eval_save_path: Optional[str] = field(default=None)
-    dagger_save_path: Optional[str] = field(default=None)
     activate_maps: Optional[List[str]] = field(default_factory=list)
 
     gpu_id: int = field(default=3, metadata={"help": "simulator gpus"})
@@ -123,7 +93,6 @@ class CommonArguments:
 
     dataset_path: Optional[str] = field(default=None)
     eval_json_path: Optional[str] = field(default=None)
-    train_json_path: Optional[str] = field(default=None)
     object_name_json_path: Optional[str] = field(default=None)
     map_spawn_area_json_path: Optional[str] = field(default=None)
     max_episodes_per_scene: int = field(
@@ -179,7 +148,7 @@ assert args.collect_type in ['TF', 'dagger'], 'collect_type error'
 
 args.machines_info = [
     {
-        'MACHINE_IP': '127.0.0.1',
+        'MACHINE_IP': str(args.simulator_tool_host),
         'SOCKET_PORT': int(args.simulator_tool_port),
         'MAX_SCENE_NUM': 16,
         'open_scenes': [],
@@ -187,9 +156,6 @@ args.machines_info = [
 ]
 
 
-args.TRAIN_VOCAB = Path(args.project_prefix) / 'DATA/data/aerialvln/train_vocab.txt'
-args.TRAINVAL_VOCAB = Path(args.project_prefix) / 'DATA/data/aerialvln/train_vocab.txt'
-args.vocab_size = 10038
 
 
 default_config = CN.clone()

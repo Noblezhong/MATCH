@@ -87,22 +87,14 @@ def check_collision_without_tiny_diff(
     dones,
 ):
     for index, previous_episode in enumerate(episodes):
+        if previous_episode:
+            latest = current_observations[index][-1]
+            close_collision = any(
+                (depth <= 1).sum() > 0.1 * depth.size for depth in latest["depth"]
+            )
+            if close_collision:
+                latest.setdefault("sensors", {}).setdefault("state", {}).setdefault("collision", {})["depth_collision"] = True
+                collisions[index] = True
         if collisions[index]:
-            if not dones[index]:
-                dones[index] = True
-            continue
-        if len(previous_episode) == 0:
-            continue
-
-        close_collision = False
-        current_episode = current_observations[index]
-        for depth in current_episode[-1]["depth"]:
-            zero_count = (depth <= 1).sum()
-            if zero_count > 0.1 * depth.size:
-                close_collision = True
-                break
-
-        collisions[index] = close_collision
-        if close_collision and not dones[index]:
             dones[index] = True
     return collisions, dones

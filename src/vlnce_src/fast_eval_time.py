@@ -27,9 +27,10 @@ class FastEvalClock:
         self._logical_ms = 0.0
         self._wall_start = time.perf_counter()
 
-    def reset(self) -> None:
-        self._logical_ms = 0.0
-        self._wall_start = time.perf_counter()
+    def reset(self, initial_elapsed_ms: float = 0.0) -> None:
+        initial_ms = max(0.0, float(initial_elapsed_ms))
+        self._logical_ms = initial_ms
+        self._wall_start = time.perf_counter() - initial_ms / 1000.0
 
     @property
     def now_ms(self) -> float:
@@ -178,8 +179,9 @@ def configure_fast_eval_output(args, paradigm: str) -> Optional[str]:
     if not enabled:
         return None
     speedup = float(getattr(args, "fast_eval_speedup", 5.0))
-    suffix = f"_fast_x{speed_label(speedup)}"
-    if not str(args.eval_save_path).endswith(suffix):
+    suffix = f"_fastx{speed_label(speedup)}"
+    legacy_suffix = f"_fast_x{speed_label(speedup)}"
+    if not str(args.eval_save_path).endswith((suffix, legacy_suffix)):
         args.eval_save_path = str(args.eval_save_path) + suffix
     os.makedirs(args.eval_save_path, exist_ok=True)
     manifest_path = os.path.join(args.eval_save_path, "fast_eval_manifest.json")

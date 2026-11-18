@@ -5,7 +5,7 @@ NEW FILE — the MATCH paradigm of paper Algorithm 1.  It subclasses
 target-lock state machine.  No existing evaluator file is modified.
 
 Fidelity contract:
-  - ``--trajcorr_mode off``: behavior identical to ``drl_scheduler_eval.py``
+  - ``--trajcorr_mode off``: behavior identical to ``continue_ahs.py``
     (the audited PPO row; must reproduce SR 47.9 on the 0722 weights).
   - ``--trajcorr_mode on --trajcorr_state_shift_threshold_m 2.5``: MATCH.
 
@@ -764,13 +764,13 @@ class MatchEnv(DRLSchedulerEnv):
     def _finalize_episode(self, terminal_reason: Optional[str]) -> None:
         assert self.state is not None
         self.state.maybe_finalize(force=True)
-        episode_latency_ms = (
-            float(self.clock.now_ms)
-            if self.clock.enabled
-            else float((time.perf_counter() - self.episode_start_perf) * 1000.0)
-        )
+        episode_latency_ms = float(self.clock.now_ms)
         record = {
             "record_type": "episode_end",
+            **self.state.cr_state.metadata(),
+            "initial_obs_latency_ms": float(self.eval_env.initial_obs_latency_ms),
+            "initial_uplink_start_logical_ms": self.initial_uplink_start_ms,
+            "initial_uplink_latency_ms": float(self.initial_uplink_latency_ms),
             "episode_idx": int(self.episode_idx),
             "seq_names": [self.env_batch[0]["seq_name"]] if self.env_batch else [],
             "map_names": [self.env_batch[0]["map_name"]] if self.env_batch else [],

@@ -16,6 +16,8 @@ import tqdm
 
 sys.path.append(str(Path(str(os.getcwd())).resolve()))
 
+from src.vlnce_src.collision_state import EpisodeCollisionState
+from src.vlnce_src.eval_contract import check_collision_without_tiny_diff
 from assist import Assist
 from src.common.param import args, data_args, model_args
 from src.model_wrapper.profile_travel_llm import ProfileTravelModelWrapper
@@ -24,7 +26,7 @@ from src.vlnce_src.closeloop_util import (
     CheckPort,
     initialize_env_eval,
     is_dist_avail_and_initialized,
-    save_to_dataset_eval,
+    finalize_eval_episode,
     setup,
     target_distance_increasing_for_10frames,
     target_distance_regression,
@@ -185,29 +187,6 @@ def _set_console_log_message_only():
     for handler in logger.handlers:
         if isinstance(handler, logging.StreamHandler):
             handler.setFormatter(plain_formatter)
-
-
-def check_collision_without_tiny_diff(episodes, current_observations, collisions, dones):
-    for i, prev_episode in enumerate(episodes):
-        if collisions[i]:
-            if not dones[i]:
-                dones[i] = True
-            continue
-        if len(prev_episode) == 0:
-            continue
-
-        close_collision = False
-        current_episode = current_observations[i]
-        for cid in range(len(current_episode[-1]["depth"])):
-            zero_cnt = (current_episode[-1]["depth"][cid] <= 1).sum()
-            if zero_cnt > 0.1 * current_episode[-1]["depth"][cid].size:
-                close_collision = True
-                break
-
-        collisions[i] = close_collision
-        if collisions[i] and not dones[i]:
-            dones[i] = True
-    return collisions, dones
 
 
 def _print_episode_header(episode_idx, env_batch, chunk_waypoints):
@@ -538,6 +517,7 @@ class ContinuousEpisodeState:
         self.episode: List[Dict[str, Any]] = []
         self.dones = [False]
         self.collisions = [False]
+        self.cr_state = EpisodeCollisionState()
         self.predict_dones = [False]
         self.success = False
         self.oracle_success = False
@@ -585,7 +565,7 @@ class ContinuousEpisodeState:
 
     def sync_runtime_status_from_sim(self) -> None:
         sim_state = self.eval_env.sim_states[0]
-        if bool(getattr(sim_state, "is_collisioned", False)):
+        if self.cr_state.observe(sim_state.trajectory[-1:]):
             self.collisions[0] = True
             self.dones[0] = True
         if bool(getattr(sim_state, "is_end", False)):
@@ -632,7 +612,9 @@ class ContinuousEpisodeState:
         observations, dones, collisions, oracle_success = [list(x) for x in zip(*outputs)]
         collision_flags, done_flags = self._check_collision_for_continuous(observations, dones, collisions)
         self.dones = done_flags
-        self.collisions = collision_flags
+        self.collisions = [self.cr_state.observe(observations[0])]
+        if self.collisions[0]:
+            self.dones[0] = True
         self.oracle_success = bool(oracle_success[0])
         self._append_unique_observations(observations[0])
 
@@ -678,18 +660,10 @@ class ContinuousEpisodeState:
         return dino_latency_ms
 
     def maybe_finalize(self, force=False) -> bool:
-        if self.skip_saved:
-            return True
-        if force or self.dones[0]:
-            prefix = ""
-            if self.success:
-                prefix = "success_"
-            elif self.oracle_success:
-                prefix = "oracle_"
-            new_traj_name = prefix + self.ori_data_dir.split("/")[-1]
-            new_traj_dir = os.path.join(args.eval_save_path, new_traj_name)
-            save_to_dataset_eval(self.episode, new_traj_dir, self.ori_data_dir)
-            self.skip_saved = True
+        self.skip_saved = finalize_eval_episode(
+            self.episode, self.ori_data_dir, self.success, self.oracle_success,
+            self.dones[0], self.skip_saved, force,
+        )
         return self.skip_saved
 
 
@@ -751,7 +725,7 @@ class LatestOnlyEdgePlanner:
         self.enable_comm_delay = enable_comm_delay
         self.clock = clock or FastEvalClock(False)
         self.fast_eval = bool(self.clock.enabled)
-        self._bw_t0_ms = float(self.clock.now_ms)  # episode logical-time origin
+        self._bw_t0_ms = 0.0  # FastEvalClock is already relative to episode start
         self._condition = threading.Condition()
         self._pending_snapshot: Optional[Snapshot] = None
         self._result: Optional[PlannerResult] = None
@@ -956,6 +930,7 @@ def eval(
                             ignore_tiny_diff=True,
                         )
                         episode_clock = FastEvalClock(bool(args.fast_eval), args.fast_eval_speedup)
+                        episode_clock.reset(eval_env.initial_obs_latency_ms)
                         bandwidth_trace.reset_for_episode(env_batchs[0]["seq_name"])
                         planner = LatestOnlyEdgePlanner(
                             model_wrapper,
@@ -972,8 +947,11 @@ def eval(
                         scheduler = RuleBasedScheduler()
                         previous_scheduler_action: Optional[str] = None
 
-                        warmup_snapshot = state.build_snapshot(request_counter, control_step)
+                        warmup_snapshot = state.build_snapshot(
+                            request_counter, control_step, obs_latency_ms=eval_env.initial_obs_latency_ms
+                        )
                         warmup_snapshot.submitted_logical_ms = episode_clock.now_ms if episode_clock.enabled else None
+                        initial_uplink_start_ms = float(episode_clock.now_ms)
                         submitted = planner.submit(warmup_snapshot)
                         assert submitted, "failed to submit warmup snapshot"
                         warmup_hover_start = time.perf_counter()
@@ -1481,6 +1459,10 @@ def eval(
                             state.maybe_finalize(force=True)
                         episode_record = {
                             "record_type": "episode_end",
+                            **state.cr_state.metadata(),
+                            "initial_obs_latency_ms": float(eval_env.initial_obs_latency_ms),
+                            "initial_uplink_start_logical_ms": initial_uplink_start_ms,
+                            "initial_uplink_latency_ms": float(warmup_result.uplink_latency_ms),
                             "seq_names": [env_batchs[0]["seq_name"]],
                             "map_names": [env_batchs[0]["map_name"]],
                             "control_steps": int(control_step),

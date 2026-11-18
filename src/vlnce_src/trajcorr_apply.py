@@ -1,7 +1,7 @@
 """Shared TCM (Trajectory Correction Module) runtime for the MATCH paradigms.
 
 NEW FILE — imported only by ``match_eval.py`` (PPO+TCM) and
-``continue_tcm_eval.py`` (Continuous+TCM).  No existing file is modified.
+``continue_tcm.py`` (Continuous+TCM).  No existing file is modified.
 
 Implements the correction branch of paper Algorithm 1:
 

@@ -92,3 +92,6 @@ profile_logs/
 native/aerodpo_llamacpp_local/build/
 AeroDPO-llamacpp*/
 aerodpo_llamacpp_mmproj_staging*/
+
+# Local MATCH experiment outputs
+/eval_match_*/

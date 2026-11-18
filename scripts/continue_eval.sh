@@ -1,5 +1,5 @@
 #!/bin/bash
-root_dir=.
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/continue_eval.py" \
     --run_type eval \
@@ -18,7 +18,7 @@ CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/continue_eval.py" \
     --comm_trace_csv_path "$root_dir/bandwidth/ucc4g_bandwidth_trace.csv" \
     --chunk_waypoints 5 \
     --dataset_path /HDD2/TravelUAV_dataset/TravelUAV_data/ \
-    --eval_save_path "/code/TravelUAV/eval_cont_$(date +%m%d-%H%M)_fast_x10" \
+    --eval_save_path "${root_dir}/eval_cont_$(date +%m%d-%H%M)_fast_x10" \
     --model_path "$root_dir/Model/LLaMA-UAV/work_dirs/llama-uav-7b" \
     --model_base "$root_dir/Model/LLaMA-UAV/model_zoo/vicuna-7b-v1.5" \
     --vision_tower "$root_dir/Model/LLaMA-UAV/model_zoo/LAVIS/eva_vit_g.pth" \

@@ -16,6 +16,7 @@ cur_path=os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, cur_path+"/..")
 
 from utils.logger import logger
+from src.vlnce_src.collision_state import AirSimCollisionTracker, valid_airsim_collision
 
 
 class BaseSensor:
@@ -31,12 +32,18 @@ class State(BaseSensor):
                      'orientation':None, 'angular_velocity':None, 'angular_acceleration':None}
         self.client: airsim.MultirotorClient = client
         self.drone_name = drone_name
+        if not hasattr(client, "_match_collision_trackers"):
+            client._match_collision_trackers = {}
+        if drone_name not in client._match_collision_trackers:
+            client._match_collision_trackers[drone_name] = AirSimCollisionTracker()
 
     def retrieve(self):
         data = self.client.getMultirotorState(vehicle_name=self.drone_name)
         collision = {}
         collision_info = self.client.simGetCollisionInfo(vehicle_name=self.drone_name)
         collision['has_collided'] = collision_info.has_collided
+        tracker = self.client._match_collision_trackers[self.drone_name]
+        collision.update(tracker.observe(collision_info.has_collided))
         collision['object_name'] = data.collision.object_name
         gps_location = [data.gps_location.latitude,data.gps_location.longitude,data.gps_location.altitude]
         timestamp = data.timestamp
@@ -114,6 +121,12 @@ class AirVLNSimulatorClientTool:
         self.airsim_ip = '127.0.0.1'
         self._init_check()
         self.objects_name_cnt = [[0 for _ in list(item['open_scenes'])] for item in machines_info ]
+
+    def begin_episode_collision_tracking(self):
+        for clients in self.airsim_clients:
+            for client in clients:
+                if client is not None:
+                    client._match_collision_trackers = {"": AirSimCollisionTracker()}
 
     def _init_check(self) -> None:
         ips = [item['MACHINE_IP'] for item in self.machines_info]
@@ -480,7 +493,7 @@ class AirVLNSimulatorClientTool:
                 target_pos = np.array([target_x, target_y, target_z])
                 distance = float(np.linalg.norm(target_pos - current_pos))
 
-                collision = current_state.get('collision', {}).get('has_collided', False)
+                collision = valid_airsim_collision(current_state)
 
                 if not collision:
                     if distance > 0.2:
@@ -506,7 +519,7 @@ class AirVLNSimulatorClientTool:
             state_info = state_sensor.retrieve()
             imu_info = imu_sensor.retrieve()
             if not teleport and not collision:
-                collision = state_info.get('collision', {}).get('has_collided', False)
+                collision = valid_airsim_collision(state_info)
 
             airsim_client.simPause(True)
             return {'states': [{'sensors': {'state': state_info, 'imu': imu_info}}], 'collision': collision}
@@ -590,7 +603,7 @@ class AirVLNSimulatorClientTool:
                     delta = target - position
                     distance = float(np.linalg.norm(delta))
 
-                    if state_info.get('collision', {}).get('has_collided', False):
+                    if valid_airsim_collision(state_info):
                         collision = True
                         results.append({'sensors': {'state': state_info, 'imu': imu_info}})
                         break
@@ -646,6 +659,7 @@ class AirVLNSimulatorClientTool:
                             f"timeout={target_timeout:.2f}s"
                         )
                         collision = True
+                        airsim_client._match_collision_trackers[""].record_timeout(state_info['collision'])
                         results.append({'sensors': {'state': state_info, 'imu': imu_info}})
                         break
 
@@ -1051,7 +1065,7 @@ class AirVLNSimulatorClientTool:
             imu_info = copy.deepcopy(imu_sensor.retrieve())
             airsim_client.simPause(True)
 
-            collision = bool(state_info.get("collision", {}).get("has_collided", False))
+            collision = bool(valid_airsim_collision(state_info))
             action_wall_ms = (time.perf_counter() - action_wall_start) * 1000.0
             action_sim_ms = max(
                 0.0, (int(state_info["timestamp"]) - action_sim_start) / 1e6

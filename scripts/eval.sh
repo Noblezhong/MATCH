@@ -1,6 +1,6 @@
 #!/bin/bash
 
-root_dir=.
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_ID="${RUN_ID:-$(date +%m%d-%H%M)}"
 
 CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/eval.py" \
@@ -8,7 +8,7 @@ CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/eval.py" \
     --name TravelLLMCom \
     --gpu_id 0 \
     --simulator_tool_port 25000 \
-    --DDP_MASTER_PORT 80005 \
+    --DDP_MASTER_PORT 20001 \
     --batchSize 1 \
     --always_help True \
     --use_gt True \
@@ -19,7 +19,7 @@ CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/eval.py" \
     --max_episodes_per_scene 80 \
     --comm_trace_csv_path "$root_dir/bandwidth/ucc4g_bandwidth_trace.csv" \
     --dataset_path /HDD2/TravelUAV_dataset/TravelUAV_data/ \
-    --eval_save_path "/code/TravelUAV/eval_stop_go_$(date +%m%d-%H%M)_fast_x10" \
+    --eval_save_path "${root_dir}/eval_stop_go_$(date +%m%d-%H%M)_fastx10" \
     --model_path "$root_dir/Model/LLaMA-UAV/work_dirs/llama-uav-7b" \
     --model_base "$root_dir/Model/LLaMA-UAV/model_zoo/vicuna-7b-v1.5" \
     --vision_tower "$root_dir/Model/LLaMA-UAV/model_zoo/LAVIS/eva_vit_g.pth" \

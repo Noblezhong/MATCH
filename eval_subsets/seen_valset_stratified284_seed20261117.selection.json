@@ -1,0 +1,2735 @@
+{
+  "source": "/HDD2/TravelUAV_dataset/TravelUAV_data/data/uav_dataset/seen_valset.json",
+  "source_sha256": "af5b7b660ed3b1dea95b53aa72a98f74ae7a37cd381aa0e818ee2a343cf54552",
+  "dataset_root": "/HDD2/TravelUAV_dataset/TravelUAV_data",
+  "index_file": "/HDD2/TravelUAV_dataset/TravelUAV_data/data/uav_dataset/seen_valset_stratified284_seed20261117.json",
+  "index_sha256": "9498b9e79fa17698dbe44e98a693d30ea1b87b1f7f31eaae40301521bef0391c",
+  "seed": 20261117,
+  "population_episodes": 1418,
+  "selected_episodes": 284,
+  "selected_frame_records": 15019,
+  "algorithm": {
+    "scene_allocation": "Hamilton largest remainder with exact integer arithmetic; ties by scene name ascending",
+    "length": "Sum of 3D Euclidean distances between consecutive trajectory_raw_detailed.position entries, in meters",
+    "strata": "Per scene sort by (route_length_m, uuid); split into three contiguous groups, extra entries assigned short then medium then long",
+    "stratum_allocation": "Hamilton largest remainder; ties short, medium, long",
+    "sampling": "Python random.Random(20261117), one shared generator; scenes sorted ascending, strata short/medium/long; random.sample without replacement from length/UUID-sorted groups",
+    "index_rows": "All original rows for selected json paths, in original order; original values unchanged"
+  },
+  "scene_counts": [
+    {
+      "scene": "Carla_Town01",
+      "population": 165,
+      "selected": 33,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 44.706,
+            "median": 104.864,
+            "mean": 106.328,
+            "max": 156.51
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 59.986,
+            "median": 93.098,
+            "mean": 100.775,
+            "max": 156.51
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 156.586,
+            "median": 200.043,
+            "mean": 202.547,
+            "max": 252.142
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 156.586,
+            "median": 191.119,
+            "mean": 199.769,
+            "max": 247.195
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 252.909,
+            "median": 324.589,
+            "mean": 323.792,
+            "max": 417.087
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 263.653,
+            "median": 348.636,
+            "mean": 342.861,
+            "max": 408.461
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town04",
+      "population": 106,
+      "selected": 21,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 36,
+          "selected": 7,
+          "population_length_m": {
+            "count": 36,
+            "min": 59.452,
+            "median": 121.62,
+            "mean": 124.833,
+            "max": 185.717
+          },
+          "selected_length_m": {
+            "count": 7,
+            "min": 62.862,
+            "median": 103.001,
+            "mean": 100.919,
+            "max": 129.017
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 35,
+          "selected": 7,
+          "population_length_m": {
+            "count": 35,
+            "min": 186.355,
+            "median": 267.852,
+            "mean": 259.546,
+            "max": 320.255
+          },
+          "selected_length_m": {
+            "count": 7,
+            "min": 193.559,
+            "median": 224.851,
+            "mean": 235.072,
+            "max": 317.963
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 35,
+          "selected": 7,
+          "population_length_m": {
+            "count": 35,
+            "min": 320.842,
+            "median": 384.945,
+            "mean": 402.386,
+            "max": 596.931
+          },
+          "selected_length_m": {
+            "count": 7,
+            "min": 326.99,
+            "median": 396.306,
+            "mean": 421.76,
+            "max": 596.931
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town05",
+      "population": 73,
+      "selected": 15,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 25,
+          "selected": 5,
+          "population_length_m": {
+            "count": 25,
+            "min": 39.94,
+            "median": 150.003,
+            "mean": 141.576,
+            "max": 202.109
+          },
+          "selected_length_m": {
+            "count": 5,
+            "min": 95.586,
+            "median": 123.784,
+            "mean": 128.58,
+            "max": 179.283
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 24,
+          "selected": 5,
+          "population_length_m": {
+            "count": 24,
+            "min": 203.358,
+            "median": 239.993,
+            "mean": 242.353,
+            "max": 285.153
+          },
+          "selected_length_m": {
+            "count": 5,
+            "min": 211.248,
+            "median": 240.134,
+            "mean": 240.853,
+            "max": 285.153
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 24,
+          "selected": 5,
+          "population_length_m": {
+            "count": 24,
+            "min": 286.482,
+            "median": 329.016,
+            "mean": 343.802,
+            "max": 414.195
+          },
+          "selected_length_m": {
+            "count": 5,
+            "min": 322.994,
+            "median": 373.714,
+            "mean": 366.699,
+            "max": 411.14
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town06",
+      "population": 47,
+      "selected": 10,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 16,
+          "selected": 4,
+          "population_length_m": {
+            "count": 16,
+            "min": 43.973,
+            "median": 141.524,
+            "mean": 132.604,
+            "max": 194.284
+          },
+          "selected_length_m": {
+            "count": 4,
+            "min": 75.431,
+            "median": 129.892,
+            "mean": 132.374,
+            "max": 194.284
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 16,
+          "selected": 3,
+          "population_length_m": {
+            "count": 16,
+            "min": 194.855,
+            "median": 226.82,
+            "mean": 232.152,
+            "max": 284.023
+          },
+          "selected_length_m": {
+            "count": 3,
+            "min": 194.855,
+            "median": 223.151,
+            "mean": 230.147,
+            "max": 272.435
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 15,
+          "selected": 3,
+          "population_length_m": {
+            "count": 15,
+            "min": 290.235,
+            "median": 356.984,
+            "mean": 399.679,
+            "max": 932.228
+          },
+          "selected_length_m": {
+            "count": 3,
+            "min": 323.864,
+            "median": 333.855,
+            "mean": 363.148,
+            "max": 431.724
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town07",
+      "population": 60,
+      "selected": 12,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 20,
+          "selected": 4,
+          "population_length_m": {
+            "count": 20,
+            "min": 49.574,
+            "median": 92.705,
+            "mean": 94.618,
+            "max": 132.998
+          },
+          "selected_length_m": {
+            "count": 4,
+            "min": 98.302,
+            "median": 117.767,
+            "mean": 116.709,
+            "max": 132.998
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 20,
+          "selected": 4,
+          "population_length_m": {
+            "count": 20,
+            "min": 135.425,
+            "median": 148.382,
+            "mean": 156.515,
+            "max": 189.731
+          },
+          "selected_length_m": {
+            "count": 4,
+            "min": 135.425,
+            "median": 146.749,
+            "mean": 144.277,
+            "max": 148.186
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 20,
+          "selected": 4,
+          "population_length_m": {
+            "count": 20,
+            "min": 192.14,
+            "median": 250.725,
+            "mean": 244.719,
+            "max": 305.711
+          },
+          "selected_length_m": {
+            "count": 4,
+            "min": 204.089,
+            "median": 295.893,
+            "mean": 275.397,
+            "max": 305.711
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town10HD",
+      "population": 141,
+      "selected": 28,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 47,
+          "selected": 10,
+          "population_length_m": {
+            "count": 47,
+            "min": 23.503,
+            "median": 101.863,
+            "mean": 97.785,
+            "max": 140.666
+          },
+          "selected_length_m": {
+            "count": 10,
+            "min": 58.766,
+            "median": 82.583,
+            "mean": 86.258,
+            "max": 127.058
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 47,
+          "selected": 9,
+          "population_length_m": {
+            "count": 47,
+            "min": 141.814,
+            "median": 172.382,
+            "mean": 171.916,
+            "max": 198.733
+          },
+          "selected_length_m": {
+            "count": 9,
+            "min": 145.356,
+            "median": 170.375,
+            "mean": 169.36,
+            "max": 184.761
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 47,
+          "selected": 9,
+          "population_length_m": {
+            "count": 47,
+            "min": 199.536,
+            "median": 260.496,
+            "mean": 273.97,
+            "max": 430.589
+          },
+          "selected_length_m": {
+            "count": 9,
+            "min": 213.749,
+            "median": 298.4,
+            "mean": 309.242,
+            "max": 401.934
+          }
+        }
+      ]
+    },
+    {
+      "scene": "Carla_Town15",
+      "population": 111,
+      "selected": 22,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 37,
+          "selected": 8,
+          "population_length_m": {
+            "count": 37,
+            "min": 57.179,
+            "median": 160.213,
+            "mean": 141.594,
+            "max": 204.235
+          },
+          "selected_length_m": {
+            "count": 8,
+            "min": 77.043,
+            "median": 144.507,
+            "mean": 144.026,
+            "max": 202.089
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 37,
+          "selected": 7,
+          "population_length_m": {
+            "count": 37,
+            "min": 221.586,
+            "median": 285.307,
+            "mean": 283.053,
+            "max": 348.723
+          },
+          "selected_length_m": {
+            "count": 7,
+            "min": 233.052,
+            "median": 285.223,
+            "mean": 291.99,
+            "max": 348.723
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 37,
+          "selected": 7,
+          "population_length_m": {
+            "count": 37,
+            "min": 349.59,
+            "median": 405.958,
+            "mean": 450.794,
+            "max": 1072.797
+          },
+          "selected_length_m": {
+            "count": 7,
+            "min": 349.59,
+            "median": 382.218,
+            "mean": 479.641,
+            "max": 1072.797
+          }
+        }
+      ]
+    },
+    {
+      "scene": "ModernCityMap",
+      "population": 124,
+      "selected": 25,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 42,
+          "selected": 9,
+          "population_length_m": {
+            "count": 42,
+            "min": 46.93,
+            "median": 67.938,
+            "mean": 67.541,
+            "max": 80.391
+          },
+          "selected_length_m": {
+            "count": 9,
+            "min": 49.888,
+            "median": 68.11,
+            "mean": 67.304,
+            "max": 77.911
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 41,
+          "selected": 8,
+          "population_length_m": {
+            "count": 41,
+            "min": 80.533,
+            "median": 98.964,
+            "mean": 98.791,
+            "max": 119.681
+          },
+          "selected_length_m": {
+            "count": 8,
+            "min": 82.605,
+            "median": 106.427,
+            "mean": 102.877,
+            "max": 119.681
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 41,
+          "selected": 8,
+          "population_length_m": {
+            "count": 41,
+            "min": 119.982,
+            "median": 140.665,
+            "mean": 145.367,
+            "max": 203.009
+          },
+          "selected_length_m": {
+            "count": 8,
+            "min": 120.849,
+            "median": 125.461,
+            "mean": 134.232,
+            "max": 179.909
+          }
+        }
+      ]
+    },
+    {
+      "scene": "NYCEnvironmentMegapa",
+      "population": 281,
+      "selected": 56,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 94,
+          "selected": 19,
+          "population_length_m": {
+            "count": 94,
+            "min": 12.636,
+            "median": 206.084,
+            "mean": 199.033,
+            "max": 283.133
+          },
+          "selected_length_m": {
+            "count": 19,
+            "min": 108.105,
+            "median": 213.322,
+            "mean": 197.854,
+            "max": 267.445
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 94,
+          "selected": 19,
+          "population_length_m": {
+            "count": 94,
+            "min": 284.006,
+            "median": 346.1,
+            "mean": 344.379,
+            "max": 393.05
+          },
+          "selected_length_m": {
+            "count": 19,
+            "min": 291.155,
+            "median": 333.696,
+            "mean": 341.114,
+            "max": 390.071
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 93,
+          "selected": 18,
+          "population_length_m": {
+            "count": 93,
+            "min": 393.128,
+            "median": 455.586,
+            "mean": 477.113,
+            "max": 1092.758
+          },
+          "selected_length_m": {
+            "count": 18,
+            "min": 407.235,
+            "median": 448.276,
+            "mean": 461.038,
+            "max": 541.314
+          }
+        }
+      ]
+    },
+    {
+      "scene": "NewYorkCity",
+      "population": 145,
+      "selected": 29,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 49,
+          "selected": 10,
+          "population_length_m": {
+            "count": 49,
+            "min": 99.222,
+            "median": 151.413,
+            "mean": 148.144,
+            "max": 185.263
+          },
+          "selected_length_m": {
+            "count": 10,
+            "min": 129.552,
+            "median": 148.687,
+            "mean": 152.914,
+            "max": 178.506
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 48,
+          "selected": 10,
+          "population_length_m": {
+            "count": 48,
+            "min": 185.658,
+            "median": 232.21,
+            "mean": 232.159,
+            "max": 273.109
+          },
+          "selected_length_m": {
+            "count": 10,
+            "min": 220.161,
+            "median": 244.502,
+            "mean": 241.649,
+            "max": 266.492
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 48,
+          "selected": 9,
+          "population_length_m": {
+            "count": 48,
+            "min": 273.298,
+            "median": 332.797,
+            "mean": 340.467,
+            "max": 508.82
+          },
+          "selected_length_m": {
+            "count": 9,
+            "min": 277.301,
+            "median": 334.235,
+            "mean": 351.03,
+            "max": 428.12
+          }
+        }
+      ]
+    },
+    {
+      "scene": "TropicalIsland",
+      "population": 165,
+      "selected": 33,
+      "strata": [
+        {
+          "stratum": "short",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 19.58,
+            "median": 180.534,
+            "mean": 176.022,
+            "max": 242.284
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 45.856,
+            "median": 165.733,
+            "mean": 170.971,
+            "max": 238.393
+          }
+        },
+        {
+          "stratum": "medium",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 242.779,
+            "median": 305.274,
+            "mean": 297.777,
+            "max": 342.299
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 242.779,
+            "median": 305.274,
+            "mean": 293.762,
+            "max": 341.188
+          }
+        },
+        {
+          "stratum": "long",
+          "population": 55,
+          "selected": 11,
+          "population_length_m": {
+            "count": 55,
+            "min": 345.118,
+            "median": 397.964,
+            "mean": 404.781,
+            "max": 556.836
+          },
+          "selected_length_m": {
+            "count": 11,
+            "min": 345.118,
+            "median": 397.964,
+            "mean": 389.328,
+            "max": 453.914
+          }
+        }
+      ]
+    }
+  ],
+  "population_length_m": {
+    "count": 1418,
+    "min": 12.636,
+    "median": 232.174,
+    "mean": 247.619,
+    "max": 1092.758
+  },
+  "selected_length_m": {
+    "count": 284,
+    "min": 45.856,
+    "median": 230.303,
+    "mean": 245.712,
+    "max": 1072.797
+  },
+  "episodes": [
+    {
+      "json": "Carla_Town01/0a7a07a1-0757-4528-9463-ca6c0eb2ec92/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "0a7a07a1-0757-4528-9463-ca6c0eb2ec92",
+      "route_length_m": 86.18411494128306,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/0d4eb894-ed4e-4a11-8bff-24ea3b1030bb/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "0d4eb894-ed4e-4a11-8bff-24ea3b1030bb",
+      "route_length_m": 89.97904520433461,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/0fa8d2cb-50cf-47ab-8a92-077fb2ebe83a/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "0fa8d2cb-50cf-47ab-8a92-077fb2ebe83a",
+      "route_length_m": 374.7009219859689,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/13e34434-fedc-4653-a38b-6011e10ee205/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "13e34434-fedc-4653-a38b-6011e10ee205",
+      "route_length_m": 191.1186866275555,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/2adad6e8-d896-40ef-931d-30722efd9522/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "2adad6e8-d896-40ef-931d-30722efd9522",
+      "route_length_m": 89.95222528653976,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/3161e044-e3c8-41e5-aeaa-c01bb199bf78/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "3161e044-e3c8-41e5-aeaa-c01bb199bf78",
+      "route_length_m": 296.13121262058536,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/3b53ba7c-63b4-44be-bae3-40d263a4d256/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "3b53ba7c-63b4-44be-bae3-40d263a4d256",
+      "route_length_m": 137.2591405195126,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/3f7a028c-179f-491e-bf21-3f7309be5a23/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "3f7a028c-179f-491e-bf21-3f7309be5a23",
+      "route_length_m": 263.65251662580255,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/4546abbc-bc0a-4e6d-b392-2a8fd648cbf9/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "4546abbc-bc0a-4e6d-b392-2a8fd648cbf9",
+      "route_length_m": 333.24334519446006,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/480edef9-e618-4039-81eb-c10a6ac9b81a/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "480edef9-e618-4039-81eb-c10a6ac9b81a",
+      "route_length_m": 340.25119192667495,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/4c99d620-1c1c-4cc9-8bec-b4853318fff8/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "4c99d620-1c1c-4cc9-8bec-b4853318fff8",
+      "route_length_m": 156.58558636537433,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/4da06af0-95b7-4fd3-8c21-c31315857138/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "4da06af0-95b7-4fd3-8c21-c31315857138",
+      "route_length_m": 93.09838429070801,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/54908ca6-ed10-43fa-86d7-d0971f211342/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "54908ca6-ed10-43fa-86d7-d0971f211342",
+      "route_length_m": 108.0839487226225,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/73b974d5-6067-45fd-8742-169be6c28740/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "73b974d5-6067-45fd-8742-169be6c28740",
+      "route_length_m": 206.2765447008369,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/7eb4f1aa-bd11-4edc-99d8-ba7893cff09a/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "7eb4f1aa-bd11-4edc-99d8-ba7893cff09a",
+      "route_length_m": 89.04898911988049,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/84de7253-d07f-41a8-92ee-9dc53a29f057/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "84de7253-d07f-41a8-92ee-9dc53a29f057",
+      "route_length_m": 240.79408448078954,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/8a4c2258-69c6-4bed-89c9-f2d65332a908/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "8a4c2258-69c6-4bed-89c9-f2d65332a908",
+      "route_length_m": 348.6355759425699,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/9750822c-60c9-4695-8a95-86b8b93cb671/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "9750822c-60c9-4695-8a95-86b8b93cb671",
+      "route_length_m": 186.85537087311656,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/ab098a2d-0c05-41dc-b568-1af9b5a3b3e3/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "ab098a2d-0c05-41dc-b568-1af9b5a3b3e3",
+      "route_length_m": 267.8125117366519,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/ac96c2d1-4fa6-4b4b-b41a-0e4b97f07303/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "ac96c2d1-4fa6-4b4b-b41a-0e4b97f07303",
+      "route_length_m": 156.51034856203577,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/c659cd7a-e4c0-4fc6-9183-19ca9ce2d657/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "c659cd7a-e4c0-4fc6-9183-19ca9ce2d657",
+      "route_length_m": 167.61015969681,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/d196267b-ff8b-4c24-a9b2-14e3fde04fe4/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "d196267b-ff8b-4c24-a9b2-14e3fde04fe4",
+      "route_length_m": 163.1470718523024,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/d3075c4c-1f9e-4c28-b44a-cc82071249f2/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "d3075c4c-1f9e-4c28-b44a-cc82071249f2",
+      "route_length_m": 408.46072675133706,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/d914b2c2-daa6-45b3-89b1-eec5e1639ec3/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "d914b2c2-daa6-45b3-89b1-eec5e1639ec3",
+      "route_length_m": 244.44586475618982,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/dbce37c6-9095-45a3-9ad7-491c4628fad4/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "dbce37c6-9095-45a3-9ad7-491c4628fad4",
+      "route_length_m": 388.85769235967285,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/dc3f19af-837c-4cb5-ac58-73fb3f04786b/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "dc3f19af-837c-4cb5-ac58-73fb3f04786b",
+      "route_length_m": 394.51442217779913,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/dc699839-ee72-47ad-b41e-d2cb8188a2fd/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "dc699839-ee72-47ad-b41e-d2cb8188a2fd",
+      "route_length_m": 179.8242065976517,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/df24d535-4158-4e9f-9226-4535e928336a/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "df24d535-4158-4e9f-9226-4535e928336a",
+      "route_length_m": 213.61061746269894,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/dfb01511-fdfe-4769-b38f-25b3a7e0f79c/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "dfb01511-fdfe-4769-b38f-25b3a7e0f79c",
+      "route_length_m": 355.2156690598183,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town01/eab95d31-01ca-4edc-ae70-95f464c28199/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "eab95d31-01ca-4edc-ae70-95f464c28199",
+      "route_length_m": 247.19519476613516,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town01/ee6ef655-c6e7-44b1-a168-b9e456236834/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "ee6ef655-c6e7-44b1-a168-b9e456236834",
+      "route_length_m": 100.06447767964515,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/f9bdc59d-6905-43cf-b4c0-dd26512fe7a9/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "f9bdc59d-6905-43cf-b4c0-dd26512fe7a9",
+      "route_length_m": 59.98572186463648,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town01/fbf51d6f-19ed-4fc1-81fb-5af0690fe723/merged_data.json",
+      "scene": "Carla_Town01",
+      "uuid": "fbf51d6f-19ed-4fc1-81fb-5af0690fe723",
+      "route_length_m": 98.35737395710863,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/0f35a54a-0af5-45fd-ad75-c87bfe438f96/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "0f35a54a-0af5-45fd-ad75-c87bfe438f96",
+      "route_length_m": 212.28076571290492,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/1272b698-644b-4532-9e49-f39d18202477/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "1272b698-644b-4532-9e49-f39d18202477",
+      "route_length_m": 107.97939537935436,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/179cd20c-96a5-4ffd-b581-441818eb08a9/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "179cd20c-96a5-4ffd-b581-441818eb08a9",
+      "route_length_m": 103.00086258607678,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/18e77a9c-753c-4ddd-904b-1cc3dcc4fcd8/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "18e77a9c-753c-4ddd-904b-1cc3dcc4fcd8",
+      "route_length_m": 389.8308359871459,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/302badee-3c7f-411a-b346-908798f07935/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "302badee-3c7f-411a-b346-908798f07935",
+      "route_length_m": 396.30615211029294,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/3e1380e7-a1ed-4e76-aa15-08a05232cc57/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "3e1380e7-a1ed-4e76-aa15-08a05232cc57",
+      "route_length_m": 129.0170976508665,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/3e9df90a-98cf-43ec-bd1a-cc25ad0e6bf7/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "3e9df90a-98cf-43ec-bd1a-cc25ad0e6bf7",
+      "route_length_m": 98.44422665694412,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/72453bda-1f7f-42b1-a368-a6ec45a4ef16/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "72453bda-1f7f-42b1-a368-a6ec45a4ef16",
+      "route_length_m": 204.22678782836283,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/73066bc2-012f-41e7-a37f-3dc5258976ad/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "73066bc2-012f-41e7-a37f-3dc5258976ad",
+      "route_length_m": 115.4534501916649,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/7c6dfe9c-2eac-4cc4-b0ae-e2f812eec7e2/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "7c6dfe9c-2eac-4cc4-b0ae-e2f812eec7e2",
+      "route_length_m": 485.1115497601994,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/8137915d-db61-4431-933c-7b4b81cf8179/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "8137915d-db61-4431-933c-7b4b81cf8179",
+      "route_length_m": 264.518912114457,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/9896728e-b88e-438d-90cf-d7cb4f56d4ac/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "9896728e-b88e-438d-90cf-d7cb4f56d4ac",
+      "route_length_m": 596.9307488286602,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/9c47a44e-5852-41f7-94f7-9ce1971e12ca/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "9c47a44e-5852-41f7-94f7-9ce1971e12ca",
+      "route_length_m": 317.96255926961624,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/9e3debe7-f720-47df-b22b-e5cc3815933c/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "9e3debe7-f720-47df-b22b-e5cc3815933c",
+      "route_length_m": 62.86168317112216,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town04/a0bb7432-3ec8-4aa5-896e-171c00275331/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "a0bb7432-3ec8-4aa5-896e-171c00275331",
+      "route_length_m": 193.5587694826145,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/a5f9905f-30e5-42f4-a6b0-d57444a34d98/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "a5f9905f-30e5-42f4-a6b0-d57444a34d98",
+      "route_length_m": 228.10407923739328,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/b5645f0b-ecd0-471f-9960-18e80aadece3/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "b5645f0b-ecd0-471f-9960-18e80aadece3",
+      "route_length_m": 349.0999642681763,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/c8ed4b93-f676-4ba5-b998-7fddead87f64/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "c8ed4b93-f676-4ba5-b998-7fddead87f64",
+      "route_length_m": 224.85109507875777,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town04/cc8beb82-b2d7-4ae9-978c-a16c23af51c8/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "cc8beb82-b2d7-4ae9-978c-a16c23af51c8",
+      "route_length_m": 408.0477053200674,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/dae45fd4-84b8-4334-b711-75184ebed78f/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "dae45fd4-84b8-4334-b711-75184ebed78f",
+      "route_length_m": 326.98958320822703,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town04/fc52f69b-15be-4297-a197-e31629c0fcd7/merged_data.json",
+      "scene": "Carla_Town04",
+      "uuid": "fc52f69b-15be-4297-a197-e31629c0fcd7",
+      "route_length_m": 89.673268221284,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town05/0d2ae94e-ef83-4f03-97dc-4987515e36c4/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "0d2ae94e-ef83-4f03-97dc-4987515e36c4",
+      "route_length_m": 123.78385624583163,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town05/0e697263-9a66-4edd-a923-a2893f2ccbd8/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "0e697263-9a66-4edd-a923-a2893f2ccbd8",
+      "route_length_m": 148.13288505775628,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town05/3562dbf1-87c5-4109-91b7-15b798cdd251/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "3562dbf1-87c5-4109-91b7-15b798cdd251",
+      "route_length_m": 250.1415084924923,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town05/3f986e93-96b0-49b1-bd1a-62b0729bdbf3/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "3f986e93-96b0-49b1-bd1a-62b0729bdbf3",
+      "route_length_m": 396.01889882651363,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town05/470bf560-7264-4407-9ce6-827d2cf1d5fb/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "470bf560-7264-4407-9ce6-827d2cf1d5fb",
+      "route_length_m": 373.713559608278,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town05/4d3c3759-c66a-4a5c-b2fd-f7505039bde0/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "4d3c3759-c66a-4a5c-b2fd-f7505039bde0",
+      "route_length_m": 329.62716748067874,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town05/520f8728-5677-460d-81a8-1ea4ab90beba/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "520f8728-5677-460d-81a8-1ea4ab90beba",
+      "route_length_m": 240.13354571697474,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town05/807ee490-240b-4e4e-ad4a-bbc5fbeba4fb/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "807ee490-240b-4e4e-ad4a-bbc5fbeba4fb",
+      "route_length_m": 322.99437705246044,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town05/8c81c250-3bb5-4d40-bc71-0cf1b6f1cd33/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "8c81c250-3bb5-4d40-bc71-0cf1b6f1cd33",
+      "route_length_m": 411.139659271853,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town05/9d4ce781-c340-4032-915b-1bc2692c0719/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "9d4ce781-c340-4032-915b-1bc2692c0719",
+      "route_length_m": 285.1532502458701,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town05/b6959b0a-6565-4d0e-a76c-04c1f5f8fe3e/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "b6959b0a-6565-4d0e-a76c-04c1f5f8fe3e",
+      "route_length_m": 179.2834454447435,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town05/ba57a074-328a-480c-bc7b-66830dfa5cc7/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "ba57a074-328a-480c-bc7b-66830dfa5cc7",
+      "route_length_m": 211.2479540606118,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town05/c12296b9-fbf9-4433-a345-263ba701979d/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "c12296b9-fbf9-4433-a345-263ba701979d",
+      "route_length_m": 96.11472833546745,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town05/dd007b04-eb75-4c90-b1da-cb5ff817a025/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "dd007b04-eb75-4c90-b1da-cb5ff817a025",
+      "route_length_m": 217.58811187097615,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town05/fe734e53-c9a5-4010-9f9d-ee6fdd4c0307/merged_data.json",
+      "scene": "Carla_Town05",
+      "uuid": "fe734e53-c9a5-4010-9f9d-ee6fdd4c0307",
+      "route_length_m": 95.58587422281175,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town06/0cab68a3-a33a-4b33-af5e-0df74bc0fd94/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "0cab68a3-a33a-4b33-af5e-0df74bc0fd94",
+      "route_length_m": 272.4348289268292,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town06/239c6bf2-eb82-44e2-a826-b3f0e6819ef9/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "239c6bf2-eb82-44e2-a826-b3f0e6819ef9",
+      "route_length_m": 431.7241638263754,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town06/3132ded0-a6dc-483f-b52a-5294c31ec86f/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "3132ded0-a6dc-483f-b52a-5294c31ec86f",
+      "route_length_m": 113.09444760415245,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town06/4b9ce9f5-ec3e-4cac-974d-d8b38e37cbe6/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "4b9ce9f5-ec3e-4cac-974d-d8b38e37cbe6",
+      "route_length_m": 323.8640144215997,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town06/5676c37e-c235-4b74-ba93-ba47308db753/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "5676c37e-c235-4b74-ba93-ba47308db753",
+      "route_length_m": 75.43083851265584,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town06/6902fe9e-26dc-4054-8431-93001f793824/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "6902fe9e-26dc-4054-8431-93001f793824",
+      "route_length_m": 194.85474092090473,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town06/6c927741-d881-45d7-a41d-bccb9c95abd0/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "6c927741-d881-45d7-a41d-bccb9c95abd0",
+      "route_length_m": 223.15121064693113,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town06/7222e581-77fa-4dea-bc3e-1ee051f85161/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "7222e581-77fa-4dea-bc3e-1ee051f85161",
+      "route_length_m": 194.28394832342084,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town06/75cf3e07-124c-4401-88bd-15a1b128561b/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "75cf3e07-124c-4401-88bd-15a1b128561b",
+      "route_length_m": 146.68874504164876,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town06/d951bb9c-1cb2-419b-83eb-7f48a4e200b5/merged_data.json",
+      "scene": "Carla_Town06",
+      "uuid": "d951bb9c-1cb2-419b-83eb-7f48a4e200b5",
+      "route_length_m": 333.855326618266,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town07/15a599c1-acb9-4a3b-bf11-1abf2e372ef1/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "15a599c1-acb9-4a3b-bf11-1abf2e372ef1",
+      "route_length_m": 116.44742866070722,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town07/400f06b7-5fdd-4719-8108-343e14ac3924/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "400f06b7-5fdd-4719-8108-343e14ac3924",
+      "route_length_m": 119.08653951337479,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town07/740b6cd1-7968-4927-85c2-847da1a35293/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "740b6cd1-7968-4927-85c2-847da1a35293",
+      "route_length_m": 305.71121423239134,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town07/829d1e2a-90f0-4419-aca8-96e5b43de1d5/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "829d1e2a-90f0-4419-aca8-96e5b43de1d5",
+      "route_length_m": 98.30222553178486,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town07/8c67edf9-2fad-42b4-b4f6-8e8884304766/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "8c67edf9-2fad-42b4-b4f6-8e8884304766",
+      "route_length_m": 147.591076756912,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town07/9244d309-d578-436b-8aac-0202a8dcd5c8/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "9244d309-d578-436b-8aac-0202a8dcd5c8",
+      "route_length_m": 304.5627185890744,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town07/9db1ec1f-4684-4c28-b1ca-b78527deaec3/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "9db1ec1f-4684-4c28-b1ca-b78527deaec3",
+      "route_length_m": 287.22353935710254,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town07/b7b7ba63-e400-467e-81b0-0ea6636f184f/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "b7b7ba63-e400-467e-81b0-0ea6636f184f",
+      "route_length_m": 145.9066873976143,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town07/baf2d9c8-6dbc-4259-81da-a7874fcb2375/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "baf2d9c8-6dbc-4259-81da-a7874fcb2375",
+      "route_length_m": 204.08935068554396,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town07/ccc122f8-db55-4200-9fa8-921c4f88e985/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "ccc122f8-db55-4200-9fa8-921c4f88e985",
+      "route_length_m": 135.42460422029637,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town07/db20ae53-aad2-4567-93e3-6ac2671b091b/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "db20ae53-aad2-4567-93e3-6ac2671b091b",
+      "route_length_m": 132.99808559756337,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town07/efaf7e70-8bdf-43e1-9768-678a34df68d6/merged_data.json",
+      "scene": "Carla_Town07",
+      "uuid": "efaf7e70-8bdf-43e1-9768-678a34df68d6",
+      "route_length_m": 148.186279613694,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/0522fa53-0550-4fc8-b1af-0dd4a7f34f1e/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "0522fa53-0550-4fc8-b1af-0dd4a7f34f1e",
+      "route_length_m": 145.35566942563307,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/0d272187-bc9b-45c5-b92b-e62e19b58788/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "0d272187-bc9b-45c5-b92b-e62e19b58788",
+      "route_length_m": 398.5753364868363,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/0fbfdd39-9132-4a7c-a455-2acaa201caa3/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "0fbfdd39-9132-4a7c-a455-2acaa201caa3",
+      "route_length_m": 117.54125408477776,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/16cf37ef-7f38-4804-b911-7c33d1a38c85/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "16cf37ef-7f38-4804-b911-7c33d1a38c85",
+      "route_length_m": 182.97998592152047,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/2a03fa34-8dff-408e-ae9b-7a563583ec4f/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "2a03fa34-8dff-408e-ae9b-7a563583ec4f",
+      "route_length_m": 401.9341802749306,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/405b8aae-eb14-473b-8837-52b95c3bdb13/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "405b8aae-eb14-473b-8837-52b95c3bdb13",
+      "route_length_m": 87.64481349890329,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/415286dc-8b24-4bec-b0dd-131b5c012370/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "415286dc-8b24-4bec-b0dd-131b5c012370",
+      "route_length_m": 279.4515084037662,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/4482847c-66ec-4332-a24e-86d255479c52/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "4482847c-66ec-4332-a24e-86d255479c52",
+      "route_length_m": 184.76083336359252,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/4b94cc95-3e41-4ee7-8db7-af987da4ae82/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "4b94cc95-3e41-4ee7-8db7-af987da4ae82",
+      "route_length_m": 168.43095506214752,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/4e6f6a52-c662-4f4b-b886-e0e93c07cbda/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "4e6f6a52-c662-4f4b-b886-e0e93c07cbda",
+      "route_length_m": 127.05807961209479,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/5183fde6-8063-4895-9189-9742547ef5b9/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "5183fde6-8063-4895-9189-9742547ef5b9",
+      "route_length_m": 89.62247663794784,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/535d7181-cc42-4ac1-98cb-b71373ad25f8/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "535d7181-cc42-4ac1-98cb-b71373ad25f8",
+      "route_length_m": 231.2485289857051,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/592f2bfc-0d9b-4fe2-8bda-e8e076bd8a73/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "592f2bfc-0d9b-4fe2-8bda-e8e076bd8a73",
+      "route_length_m": 77.52194813461934,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/5afbccff-b0bc-4311-a8f0-1cdf2a079a7d/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "5afbccff-b0bc-4311-a8f0-1cdf2a079a7d",
+      "route_length_m": 353.1987618470637,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/5dbcf457-9de3-452d-84ad-1a4f50af1bcf/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "5dbcf457-9de3-452d-84ad-1a4f50af1bcf",
+      "route_length_m": 165.1561588593518,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/6230af00-4a85-4d20-b61b-37fa3254e384/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "6230af00-4a85-4d20-b61b-37fa3254e384",
+      "route_length_m": 72.6601158882406,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/6853f4ba-f038-40cf-9a76-56e75d10b084/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "6853f4ba-f038-40cf-9a76-56e75d10b084",
+      "route_length_m": 58.766322320353595,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/70477704-805f-49d0-b187-d2dbc3e31138/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "70477704-805f-49d0-b187-d2dbc3e31138",
+      "route_length_m": 177.32178126103116,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/7210247b-937c-482c-953a-7cf7d8c6399b/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "7210247b-937c-482c-953a-7cf7d8c6399b",
+      "route_length_m": 65.23171948466972,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/82a3cabc-7a86-4dfd-bb85-cfd975781e07/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "82a3cabc-7a86-4dfd-bb85-cfd975781e07",
+      "route_length_m": 213.7490461969534,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/978cee59-c53d-4d45-b975-2169e0d802ef/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "978cee59-c53d-4d45-b975-2169e0d802ef",
+      "route_length_m": 172.38164288289428,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/ca39a758-a8a3-45bd-bb9c-cccd45d11549/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "ca39a758-a8a3-45bd-bb9c-cccd45d11549",
+      "route_length_m": 157.47528762651842,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/d0c13da2-4097-4b1e-bc65-9a7399c53bb6/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "d0c13da2-4097-4b1e-bc65-9a7399c53bb6",
+      "route_length_m": 170.3754342576219,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town10HD/d3951518-f232-45d3-bfca-14546aefbb1f/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "d3951518-f232-45d3-bfca-14546aefbb1f",
+      "route_length_m": 272.52275055290454,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/d5b700a5-d1c0-424f-b186-83d1992bc114/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "d5b700a5-d1c0-424f-b186-83d1992bc114",
+      "route_length_m": 68.9207315504532,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town10HD/db179f61-b36f-4909-840c-ab10b79d2dce/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "db179f61-b36f-4909-840c-ab10b79d2dce",
+      "route_length_m": 334.09777207301676,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/ed75d98b-6ff0-43ec-a04d-ab02dcebd818/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "ed75d98b-6ff0-43ec-a04d-ab02dcebd818",
+      "route_length_m": 298.40027663981033,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town10HD/ffa20ea3-48db-4a16-8b79-979b0e2f83ed/merged_data.json",
+      "scene": "Carla_Town10HD",
+      "uuid": "ffa20ea3-48db-4a16-8b79-979b0e2f83ed",
+      "route_length_m": 97.61375809832018,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/087521f0-520f-47e5-9728-e8b6704c8844/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "087521f0-520f-47e5-9728-e8b6704c8844",
+      "route_length_m": 249.224799272632,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/143f3762-e44e-4ed5-9dc3-8a717dfe8ca3/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "143f3762-e44e-4ed5-9dc3-8a717dfe8ca3",
+      "route_length_m": 355.90397609848964,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/17e8f769-4a49-4fc2-a572-b7ac265b9927/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "17e8f769-4a49-4fc2-a572-b7ac265b9927",
+      "route_length_m": 376.2207052498309,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/1d325b8d-b5ae-46f1-b8fe-1005ed59b3bf/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "1d325b8d-b5ae-46f1-b8fe-1005ed59b3bf",
+      "route_length_m": 285.22303646256825,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/23c1cc67-ba0b-4dcd-bbd1-cb22b2e41c5f/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "23c1cc67-ba0b-4dcd-bbd1-cb22b2e41c5f",
+      "route_length_m": 184.44185257049367,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/46f0455d-9c0c-42c9-aff1-ec1ea44400a4/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "46f0455d-9c0c-42c9-aff1-ec1ea44400a4",
+      "route_length_m": 125.21880941506552,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/521e5ffe-9e3c-4005-9c33-424f1bf7bfa6/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "521e5ffe-9e3c-4005-9c33-424f1bf7bfa6",
+      "route_length_m": 382.21816743258626,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/621c2f39-8095-46a0-81a5-8b31b8d521cd/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "621c2f39-8095-46a0-81a5-8b31b8d521cd",
+      "route_length_m": 105.26732368739609,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/6706cd07-d7e2-48eb-a2d4-a15e67a184a6/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "6706cd07-d7e2-48eb-a2d4-a15e67a184a6",
+      "route_length_m": 77.0431094607493,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/682fd11e-76ef-4bca-8779-8d906c2e237f/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "682fd11e-76ef-4bca-8779-8d906c2e237f",
+      "route_length_m": 95.69946953496978,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/6bbec29d-1a62-4f65-9f67-8e0804b9dec6/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "6bbec29d-1a62-4f65-9f67-8e0804b9dec6",
+      "route_length_m": 202.08861850666761,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/73b1a817-a949-4117-b643-8f0ee82640a5/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "73b1a817-a949-4117-b643-8f0ee82640a5",
+      "route_length_m": 337.9292903740434,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/80764245-8066-41ae-814a-7d82d0d91ae0/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "80764245-8066-41ae-814a-7d82d0d91ae0",
+      "route_length_m": 389.7398214807799,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/81a4f088-e224-4360-a341-3bf6d56e9541/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "81a4f088-e224-4360-a341-3bf6d56e9541",
+      "route_length_m": 315.2041593460111,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/9295ea00-359b-4284-86b5-174956a7ba3f/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "9295ea00-359b-4284-86b5-174956a7ba3f",
+      "route_length_m": 431.02069883234145,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/9411c133-e969-4465-99a5-2ef4e4dd9b4d/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "9411c133-e969-4465-99a5-2ef4e4dd9b4d",
+      "route_length_m": 198.6552145445094,
+      "length_stratum": "short"
+    },
+    {
+      "json": "Carla_Town15/9cc141cd-8149-4d1c-99c7-5fb8ec3f4ea3/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "9cc141cd-8149-4d1c-99c7-5fb8ec3f4ea3",
+      "route_length_m": 274.5735800345363,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/9e3f7090-76c7-4d6c-a7bc-f8852b924345/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "9e3f7090-76c7-4d6c-a7bc-f8852b924345",
+      "route_length_m": 349.58952213280133,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/a4081849-42f1-4203-a7f0-dc429c456878/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "a4081849-42f1-4203-a7f0-dc429c456878",
+      "route_length_m": 233.05205287298688,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/c27d478f-28b4-46fd-911a-397d3ddee88c/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "c27d478f-28b4-46fd-911a-397d3ddee88c",
+      "route_length_m": 1072.7973966721156,
+      "length_stratum": "long"
+    },
+    {
+      "json": "Carla_Town15/cd99fc85-b08c-455e-8152-2e946b991aba/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "cd99fc85-b08c-455e-8152-2e946b991aba",
+      "route_length_m": 348.722949475794,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "Carla_Town15/e3d30915-87ae-414f-a3e7-44a724d8aea6/merged_data.json",
+      "scene": "Carla_Town15",
+      "uuid": "e3d30915-87ae-414f-a3e7-44a724d8aea6",
+      "route_length_m": 163.79493170738303,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/0924ab9d-9c80-4088-beb6-bc2b93a687c5/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "0924ab9d-9c80-4088-beb6-bc2b93a687c5",
+      "route_length_m": 107.33298516046767,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/0acc8349-36c9-4816-a8d8-a15c101ffe1e/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "0acc8349-36c9-4816-a8d8-a15c101ffe1e",
+      "route_length_m": 66.88394128344302,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/16ce0da6-cd2f-4d26-9d34-7185a269f0aa/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "16ce0da6-cd2f-4d26-9d34-7185a269f0aa",
+      "route_length_m": 73.6700740128805,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/1dea730b-95db-4637-ba58-a5cff6235f2a/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "1dea730b-95db-4637-ba58-a5cff6235f2a",
+      "route_length_m": 124.58392364514889,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/343f9571-0628-45c1-87dd-23c71aea1ce8/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "343f9571-0628-45c1-87dd-23c71aea1ce8",
+      "route_length_m": 106.29602973013495,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/35503ce1-0661-4150-a9d5-11fd7cb919b0/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "35503ce1-0661-4150-a9d5-11fd7cb919b0",
+      "route_length_m": 119.68098449576274,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/521576c2-5aa4-4bba-affa-a0e831a696da/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "521576c2-5aa4-4bba-affa-a0e831a696da",
+      "route_length_m": 68.11037742739306,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/59776c60-67a3-4b31-b2b3-99810367b925/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "59776c60-67a3-4b31-b2b3-99810367b925",
+      "route_length_m": 71.86018005471149,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/5e581ac9-6dfa-4e10-a182-f5d9b461652d/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "5e581ac9-6dfa-4e10-a182-f5d9b461652d",
+      "route_length_m": 122.06333336482922,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/61df0d3b-bfc5-40d9-a0bb-e11b437d6f2c/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "61df0d3b-bfc5-40d9-a0bb-e11b437d6f2c",
+      "route_length_m": 100.15722855988591,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/7a08f939-34f2-461e-8706-99a6b7492d49/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "7a08f939-34f2-461e-8706-99a6b7492d49",
+      "route_length_m": 64.42925352350281,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/7df59c20-f745-46f6-a1a7-28773388b064/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "7df59c20-f745-46f6-a1a7-28773388b064",
+      "route_length_m": 71.53392620541864,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/7e8ab38f-c555-416b-9e6a-99963cfd462d/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "7e8ab38f-c555-416b-9e6a-99963cfd462d",
+      "route_length_m": 77.91079889694652,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/84eabab1-99ff-4cb8-bde9-ad9459196148/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "84eabab1-99ff-4cb8-bde9-ad9459196148",
+      "route_length_m": 123.64176786172472,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/89d907dc-c817-4ee1-bd3c-ec5d1c4b4c97/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "89d907dc-c817-4ee1-bd3c-ec5d1c4b4c97",
+      "route_length_m": 89.0828785211939,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/8c0004b5-7c81-4b8b-851d-9e36f800b74e/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "8c0004b5-7c81-4b8b-851d-9e36f800b74e",
+      "route_length_m": 179.9094578416044,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/982c8942-8ff0-41c8-8c37-b2741bab1cd8/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "982c8942-8ff0-41c8-8c37-b2741bab1cd8",
+      "route_length_m": 126.33885937288557,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/a45a5217-abd3-403e-845e-082913f0c4ef/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "a45a5217-abd3-403e-845e-082913f0c4ef",
+      "route_length_m": 135.80057151451072,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/b1f2e8ef-b452-4b4e-91ee-7f081a5bb2c2/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "b1f2e8ef-b452-4b4e-91ee-7f081a5bb2c2",
+      "route_length_m": 49.88765848873531,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/ba1954aa-ab46-42f2-920d-dbefbe5acf9b/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "ba1954aa-ab46-42f2-920d-dbefbe5acf9b",
+      "route_length_m": 61.45311146858031,
+      "length_stratum": "short"
+    },
+    {
+      "json": "ModernCityMap/c3732132-6694-4cee-9f77-1dfa441696f6/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "c3732132-6694-4cee-9f77-1dfa441696f6",
+      "route_length_m": 140.66546948350373,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/cad7a3ae-d2e2-4e4b-8ddb-50749f0eb240/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "cad7a3ae-d2e2-4e4b-8ddb-50749f0eb240",
+      "route_length_m": 111.30238198580997,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/f14e7115-e964-47b9-89cf-b6069541ba8c/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "f14e7115-e964-47b9-89cf-b6069541ba8c",
+      "route_length_m": 106.55797589685804,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "ModernCityMap/f77d0864-4077-40c1-a425-ae4f1e1d51a9/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "f77d0864-4077-40c1-a425-ae4f1e1d51a9",
+      "route_length_m": 120.84864813520517,
+      "length_stratum": "long"
+    },
+    {
+      "json": "ModernCityMap/ff530b9f-3727-4936-9bf1-69400560c257/merged_data.json",
+      "scene": "ModernCityMap",
+      "uuid": "ff530b9f-3727-4936-9bf1-69400560c257",
+      "route_length_m": 82.60453822446803,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/0386165f-ef66-44ba-aeab-8d0d220b5422/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "0386165f-ef66-44ba-aeab-8d0d220b5422",
+      "route_length_m": 491.1177106378982,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/049d8411-b320-48fd-ba8b-48391985bad2/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "049d8411-b320-48fd-ba8b-48391985bad2",
+      "route_length_m": 163.60478556382495,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/067c56c9-d134-4f80-abfd-ed21c07ebeaf/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "067c56c9-d134-4f80-abfd-ed21c07ebeaf",
+      "route_length_m": 344.5088375058915,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/0f1df0f6-bcc8-4438-b458-a31bad53cb99/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "0f1df0f6-bcc8-4438-b458-a31bad53cb99",
+      "route_length_m": 379.7811016227553,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/1c154c27-6521-445f-90d0-dc4dab2dff59/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "1c154c27-6521-445f-90d0-dc4dab2dff59",
+      "route_length_m": 534.1395329170762,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/22856c6c-942a-4acc-94c1-e45a451c85bb/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "22856c6c-942a-4acc-94c1-e45a451c85bb",
+      "route_length_m": 419.63072665954024,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/3f56fd41-613c-4cb5-8cbf-74eac0bb590f/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "3f56fd41-613c-4cb5-8cbf-74eac0bb590f",
+      "route_length_m": 333.69555754671643,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/413fd1f3-e62a-4014-b123-217bedcae408/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "413fd1f3-e62a-4014-b123-217bedcae408",
+      "route_length_m": 267.4452886143934,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/4279af6b-15ef-48a0-adec-5742154e76e6/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "4279af6b-15ef-48a0-adec-5742154e76e6",
+      "route_length_m": 437.4639244063695,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/454fcb50-1469-4b9a-84b0-3803ffa77e30/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "454fcb50-1469-4b9a-84b0-3803ffa77e30",
+      "route_length_m": 213.3221164089971,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/488d0a56-fdac-4ef9-a5e1-20639d5619ad/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "488d0a56-fdac-4ef9-a5e1-20639d5619ad",
+      "route_length_m": 493.44988316837635,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/49b3c2a4-0acc-4f67-bcb2-b17e5562447c/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "49b3c2a4-0acc-4f67-bcb2-b17e5562447c",
+      "route_length_m": 228.3288059418328,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/49eb5067-7c93-487a-a67e-e78488eacfe1/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "49eb5067-7c93-487a-a67e-e78488eacfe1",
+      "route_length_m": 436.8626453288579,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/4a2de86f-169c-4281-838c-0b9c3e83fdba/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "4a2de86f-169c-4281-838c-0b9c3e83fdba",
+      "route_length_m": 382.48626377666585,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/4e4e1a47-8c57-49d2-a848-a10f7b5123de/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "4e4e1a47-8c57-49d2-a848-a10f7b5123de",
+      "route_length_m": 339.8652843842346,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/55c2f88e-2568-44b3-84f8-0c5af911d372/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "55c2f88e-2568-44b3-84f8-0c5af911d372",
+      "route_length_m": 329.89896839784336,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/5703182e-faaf-403c-b08d-a24b9f45d676/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "5703182e-faaf-403c-b08d-a24b9f45d676",
+      "route_length_m": 321.4404616363289,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/5e0f4a58-aafa-49ad-abf5-02081afe6707/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "5e0f4a58-aafa-49ad-abf5-02081afe6707",
+      "route_length_m": 108.10534800046275,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/5ef43374-5549-4ae2-b557-084f732b667b/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "5ef43374-5549-4ae2-b557-084f732b667b",
+      "route_length_m": 181.35748993261913,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/5f78abad-d74e-49e7-b6e1-6e721e0676cd/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "5f78abad-d74e-49e7-b6e1-6e721e0676cd",
+      "route_length_m": 240.32531644845488,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/61aebc88-98ed-425f-a8c3-c571a9692c7f/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "61aebc88-98ed-425f-a8c3-c571a9692c7f",
+      "route_length_m": 291.1550281885794,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/638b4a37-aa20-4482-8df0-f263d0aaa98d/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "638b4a37-aa20-4482-8df0-f263d0aaa98d",
+      "route_length_m": 304.96179016308895,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/698bce9d-ddd7-4dab-9636-b0c021a81fc9/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "698bce9d-ddd7-4dab-9636-b0c021a81fc9",
+      "route_length_m": 109.53165064411442,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/6b81320a-403b-4cf7-b345-fb3a813610c9/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "6b81320a-403b-4cf7-b345-fb3a813610c9",
+      "route_length_m": 135.5886556716478,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/6c665e2a-41ba-48d9-a80c-2a85951edb2a/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "6c665e2a-41ba-48d9-a80c-2a85951edb2a",
+      "route_length_m": 519.9540562255571,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/73351c84-8653-4467-bc2f-97541defbc8d/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "73351c84-8653-4467-bc2f-97541defbc8d",
+      "route_length_m": 215.10186458536253,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/75eb5c06-29d4-4920-99c6-808f7efebd6f/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "75eb5c06-29d4-4920-99c6-808f7efebd6f",
+      "route_length_m": 228.9707856393864,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/78e2de8d-2a78-463e-b6d0-0d286623f08d/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "78e2de8d-2a78-463e-b6d0-0d286623f08d",
+      "route_length_m": 335.4018725816466,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/7b559473-f867-467e-9621-857f7b4fb73e/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "7b559473-f867-467e-9621-857f7b4fb73e",
+      "route_length_m": 256.35633687381585,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/7e8f4910-4abf-43f4-a494-72674fb68f13/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "7e8f4910-4abf-43f4-a494-72674fb68f13",
+      "route_length_m": 370.5191052787615,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/8158f657-13c5-43ca-be77-f0dc2664e9de/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "8158f657-13c5-43ca-be77-f0dc2664e9de",
+      "route_length_m": 202.68255872018764,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/853d4e00-8676-44ec-abf2-aa72c54ce4f4/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "853d4e00-8676-44ec-abf2-aa72c54ce4f4",
+      "route_length_m": 417.8437713108382,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/86aba634-a354-427a-ba89-4886dfdb0d75/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "86aba634-a354-427a-ba89-4886dfdb0d75",
+      "route_length_m": 463.7662949461814,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/86d1457e-9964-4c63-9e38-4f80668f55ac/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "86d1457e-9964-4c63-9e38-4f80668f55ac",
+      "route_length_m": 368.8624364302414,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/8f829947-acd0-4036-bac0-55b745d06f70/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "8f829947-acd0-4036-bac0-55b745d06f70",
+      "route_length_m": 541.3141604966542,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/916a319f-f6dd-4801-8c51-a859c58b6cea/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "916a319f-f6dd-4801-8c51-a859c58b6cea",
+      "route_length_m": 230.52009949326413,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/941702fd-5f21-4e80-98f3-9a8e623af023/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "941702fd-5f21-4e80-98f3-9a8e623af023",
+      "route_length_m": 135.0748820188922,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/9abf6ac0-a552-466f-aa94-53e39a4ea54a/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "9abf6ac0-a552-466f-aa94-53e39a4ea54a",
+      "route_length_m": 317.0247571409354,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/ab3062c7-71f2-4326-ae6f-36a25a19ed7f/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "ab3062c7-71f2-4326-ae6f-36a25a19ed7f",
+      "route_length_m": 436.3845655064841,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/af451a68-84a4-4e3d-a19f-ece22b4a6f1e/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "af451a68-84a4-4e3d-a19f-ece22b4a6f1e",
+      "route_length_m": 420.7050953180227,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/af5dc39e-428d-4654-84d5-4bd4d50bbdc2/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "af5dc39e-428d-4654-84d5-4bd4d50bbdc2",
+      "route_length_m": 174.89599582454582,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/b43be621-2c3f-4580-b844-54fef46ca7af/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "b43be621-2c3f-4580-b844-54fef46ca7af",
+      "route_length_m": 467.53083619946364,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/b9d53fd6-31c2-4276-9921-9bc7df21df36/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "b9d53fd6-31c2-4276-9921-9bc7df21df36",
+      "route_length_m": 181.4803240686201,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/bf134972-be7e-4474-90bb-4b0d5108f647/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "bf134972-be7e-4474-90bb-4b0d5108f647",
+      "route_length_m": 240.98916953929793,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/c3724a0b-d2f8-4c15-b095-3fa9759917ed/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "c3724a0b-d2f8-4c15-b095-3fa9759917ed",
+      "route_length_m": 522.7534564742838,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/cae4f4ff-2ab7-46d7-969f-32e185eb16c8/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "cae4f4ff-2ab7-46d7-969f-32e185eb16c8",
+      "route_length_m": 245.54509319961252,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/d336899b-e3dd-41b3-b3c5-215a95286909/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "d336899b-e3dd-41b3-b3c5-215a95286909",
+      "route_length_m": 327.35119213419375,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/d466ea53-484d-4de2-9350-779fad8a0d52/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "d466ea53-484d-4de2-9350-779fad8a0d52",
+      "route_length_m": 315.48671588284265,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/dacf7f96-7c67-4a12-8d5c-5dbdb72619cb/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "dacf7f96-7c67-4a12-8d5c-5dbdb72619cb",
+      "route_length_m": 412.4712616691832,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/dde57656-f658-4733-9a34-cc27aef5cd53/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "dde57656-f658-4733-9a34-cc27aef5cd53",
+      "route_length_m": 375.83105408494094,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/e063925a-c2c9-406b-9531-8c9f431a696b/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "e063925a-c2c9-406b-9531-8c9f431a696b",
+      "route_length_m": 390.0707274414169,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/e4fb8f38-eda1-4964-a569-2ba1eed05cf3/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "e4fb8f38-eda1-4964-a569-2ba1eed05cf3",
+      "route_length_m": 416.9809302309263,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/f171e647-cbc8-4700-a67a-500169e6ef00/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "f171e647-cbc8-4700-a67a-500169e6ef00",
+      "route_length_m": 323.2834345335606,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/f57006d6-9911-4366-8f9f-0fddd21819b5/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "f57006d6-9911-4366-8f9f-0fddd21819b5",
+      "route_length_m": 407.23498601558083,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/f8054e27-ded4-4e7e-b0c0-4573d577473b/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "f8054e27-ded4-4e7e-b0c0-4573d577473b",
+      "route_length_m": 459.0870965260692,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NYCEnvironmentMegapa/ff5f94dc-4a45-4d7d-b39d-699e663f866f/merged_data.json",
+      "scene": "NYCEnvironmentMegapa",
+      "uuid": "ff5f94dc-4a45-4d7d-b39d-699e663f866f",
+      "route_length_m": 329.54342849387984,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/03e1cab3-9400-44a6-8d72-8e708064cc05/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "03e1cab3-9400-44a6-8d72-8e708064cc05",
+      "route_length_m": 277.30136653871006,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/1b59a6d5-d2f0-4634-a248-b9c3938613a2/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "1b59a6d5-d2f0-4634-a248-b9c3938613a2",
+      "route_length_m": 312.7633573979031,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/23942ae5-831a-411d-bbad-761c61f70d94/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "23942ae5-831a-411d-bbad-761c61f70d94",
+      "route_length_m": 230.08573100239278,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/2d195f59-c9f6-42f6-b34e-f15254b92946/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "2d195f59-c9f6-42f6-b34e-f15254b92946",
+      "route_length_m": 244.73367083168125,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/3ecb2c27-6c46-4719-be0b-3f6c379d6aad/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "3ecb2c27-6c46-4719-be0b-3f6c379d6aad",
+      "route_length_m": 266.49239500475,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/4f5f7e8b-c402-45c0-8304-909b14c2cf9a/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "4f5f7e8b-c402-45c0-8304-909b14c2cf9a",
+      "route_length_m": 414.0548771897322,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/4f6d0b1e-03eb-4af0-b555-0f7049052b05/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "4f6d0b1e-03eb-4af0-b555-0f7049052b05",
+      "route_length_m": 139.49708401533834,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/549346ed-351e-4319-8650-ba0175d0c881/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "549346ed-351e-4319-8650-ba0175d0c881",
+      "route_length_m": 142.2117148405917,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/60fe4b93-9721-4bbf-b6fc-ac7f645918e8/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "60fe4b93-9721-4bbf-b6fc-ac7f645918e8",
+      "route_length_m": 330.02267240990517,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/645a6a73-659a-48f8-8ea3-38b9730297ba/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "645a6a73-659a-48f8-8ea3-38b9730297ba",
+      "route_length_m": 334.2347036001239,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/6a34b3ff-484b-4a22-95d4-9cd6642eb1e2/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "6a34b3ff-484b-4a22-95d4-9cd6642eb1e2",
+      "route_length_m": 428.11958203613455,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/760e30cb-411a-4877-8629-cb5f69e9d5c9/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "760e30cb-411a-4877-8629-cb5f69e9d5c9",
+      "route_length_m": 223.78278568664942,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/786bed7f-d3cc-41d8-9b39-433159d11949/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "786bed7f-d3cc-41d8-9b39-433159d11949",
+      "route_length_m": 177.40920441458763,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/83c7db19-ddec-498b-99fb-abc987c53a82/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "83c7db19-ddec-498b-99fb-abc987c53a82",
+      "route_length_m": 339.9525857506951,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/87587397-af1b-4617-b72f-be1d04859e87/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "87587397-af1b-4617-b72f-be1d04859e87",
+      "route_length_m": 408.63054572061253,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/88175583-e251-41f4-9b8c-53af19d8b3ff/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "88175583-e251-41f4-9b8c-53af19d8b3ff",
+      "route_length_m": 314.19314564429214,
+      "length_stratum": "long"
+    },
+    {
+      "json": "NewYorkCity/8bf7312a-b9ad-486a-8404-25e704899eca/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "8bf7312a-b9ad-486a-8404-25e704899eca",
+      "route_length_m": 257.9169578195541,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/9027c9e4-e8f5-4be1-b49c-8ca4e3a9b78d/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "9027c9e4-e8f5-4be1-b49c-8ca4e3a9b78d",
+      "route_length_m": 220.1608282155278,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/9108a234-4bc2-4d02-ab39-8cd7be851844/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "9108a234-4bc2-4d02-ab39-8cd7be851844",
+      "route_length_m": 129.55190354600126,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/91493df0-8ea6-46bf-8c47-fdc12db093ad/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "91493df0-8ea6-46bf-8c47-fdc12db093ad",
+      "route_length_m": 149.80218447424463,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/a46e6edf-6787-4fcf-8d8b-7233bcde6395/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "a46e6edf-6787-4fcf-8d8b-7233bcde6395",
+      "route_length_m": 169.12932332120923,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/acef8774-5bca-4520-adaa-ba5155955f5c/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "acef8774-5bca-4520-adaa-ba5155955f5c",
+      "route_length_m": 135.40626588438292,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/bff9ab5e-abe3-4ce4-94c1-87bc42873c79/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "bff9ab5e-abe3-4ce4-94c1-87bc42873c79",
+      "route_length_m": 147.57152806822566,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/c79d2c0f-5e1e-41a9-a1d8-57fd49fc06d8/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "c79d2c0f-5e1e-41a9-a1d8-57fd49fc06d8",
+      "route_length_m": 224.2611627162361,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/c8e07d76-3dc7-4098-a479-7bd213aae175/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "c8e07d76-3dc7-4098-a479-7bd213aae175",
+      "route_length_m": 178.50579702371215,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/d1962962-3b71-41f0-bece-d0cdfc46ef23/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "d1962962-3b71-41f0-bece-d0cdfc46ef23",
+      "route_length_m": 253.24891101628535,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/dfad5889-8d17-4ef7-9ece-26f332278e01/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "dfad5889-8d17-4ef7-9ece-26f332278e01",
+      "route_length_m": 244.2694655325247,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "NewYorkCity/f2063633-b080-47f4-a12d-c3bc62dddf72/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "f2063633-b080-47f4-a12d-c3bc62dddf72",
+      "route_length_m": 160.05906954014108,
+      "length_stratum": "short"
+    },
+    {
+      "json": "NewYorkCity/f904f73c-55ba-4961-a07c-1d702873173d/merged_data.json",
+      "scene": "NewYorkCity",
+      "uuid": "f904f73c-55ba-4961-a07c-1d702873173d",
+      "route_length_m": 251.53993998757306,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/086382b3-fbf0-41e5-bdf7-b72697f050c1/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "086382b3-fbf0-41e5-bdf7-b72697f050c1",
+      "route_length_m": 329.89139192410033,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/107b4ff9-aa64-4afa-b9ae-a91b4adbc658/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "107b4ff9-aa64-4afa-b9ae-a91b4adbc658",
+      "route_length_m": 165.73252028141226,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/16975f16-d6e9-489a-9699-3065433d67a4/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "16975f16-d6e9-489a-9699-3065433d67a4",
+      "route_length_m": 231.73233786827586,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/1d4faac8-441a-4909-bb08-6715dff0798d/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "1d4faac8-441a-4909-bb08-6715dff0798d",
+      "route_length_m": 408.69827912741016,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/2bcfecae-c05c-452a-8e43-6115ebeae091/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "2bcfecae-c05c-452a-8e43-6115ebeae091",
+      "route_length_m": 405.2722362476983,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/2e16b5ee-675f-4300-adb1-537a85dd88e6/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "2e16b5ee-675f-4300-adb1-537a85dd88e6",
+      "route_length_m": 341.18776356154484,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/39fb65ec-cd0b-4523-a80c-8ae59dae663a/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "39fb65ec-cd0b-4523-a80c-8ae59dae663a",
+      "route_length_m": 453.9139893524049,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/447f8b37-eea1-4b1a-8459-026207d65627/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "447f8b37-eea1-4b1a-8459-026207d65627",
+      "route_length_m": 416.5913684922055,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/540be776-280b-479b-831c-2378dec98c0c/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "540be776-280b-479b-831c-2378dec98c0c",
+      "route_length_m": 242.7794510056441,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/61fa69c1-c8d3-4a4d-b116-96fcc63393c0/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "61fa69c1-c8d3-4a4d-b116-96fcc63393c0",
+      "route_length_m": 351.18979821051926,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/6559e7ae-afb7-43e0-a3b1-03f7182e86e6/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "6559e7ae-afb7-43e0-a3b1-03f7182e86e6",
+      "route_length_m": 186.86023207174492,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/6986ddad-b12b-4e9e-9867-048e8a378a27/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "6986ddad-b12b-4e9e-9867-048e8a378a27",
+      "route_length_m": 251.72539310014326,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/6a819e1a-b5fa-4c5a-a4dc-fd765859b5ea/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "6a819e1a-b5fa-4c5a-a4dc-fd765859b5ea",
+      "route_length_m": 345.11759371502137,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/6e8eef68-8b5a-438a-b3ae-694ccf2611af/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "6e8eef68-8b5a-438a-b3ae-694ccf2611af",
+      "route_length_m": 238.39308676498268,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/7419e788-baf4-4fa4-b55e-732cf67367b6/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "7419e788-baf4-4fa4-b55e-732cf67367b6",
+      "route_length_m": 153.74545299435863,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/75103cf0-69d1-4ddd-b432-8a0e4bbcaaf1/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "75103cf0-69d1-4ddd-b432-8a0e4bbcaaf1",
+      "route_length_m": 331.96581679077684,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/96a72e16-b3be-4c32-936f-be29ddea81a1/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "96a72e16-b3be-4c32-936f-be29ddea81a1",
+      "route_length_m": 212.80938564509103,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/9e644233-f666-4e70-8128-2e5d4e1b9d09/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "9e644233-f666-4e70-8128-2e5d4e1b9d09",
+      "route_length_m": 266.03506905341663,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/ab6221a6-24ac-47e5-bc67-789420fa138d/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "ab6221a6-24ac-47e5-bc67-789420fa138d",
+      "route_length_m": 158.4475763846547,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/c582c480-5921-4830-92f3-aa963d5cae73/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "c582c480-5921-4830-92f3-aa963d5cae73",
+      "route_length_m": 407.42430771695155,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/c7d00d78-4bdb-414b-888c-8f48c2718de7/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "c7d00d78-4bdb-414b-888c-8f48c2718de7",
+      "route_length_m": 45.85602555828394,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/c89bfd29-063c-47e4-86ce-e2a33dc35e64/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "c89bfd29-063c-47e4-86ce-e2a33dc35e64",
+      "route_length_m": 328.7148763575703,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/df2291d7-95e8-48f9-85f3-7fee64a6ac0f/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "df2291d7-95e8-48f9-85f3-7fee64a6ac0f",
+      "route_length_m": 140.3904915134167,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/e13b70f5-b48d-4a1b-8320-9ccaaf1789db/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "e13b70f5-b48d-4a1b-8320-9ccaaf1789db",
+      "route_length_m": 312.29793773402037,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/e3a812d5-3c8e-4d1e-bdb2-d0dea0ea1603/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "e3a812d5-3c8e-4d1e-bdb2-d0dea0ea1603",
+      "route_length_m": 305.2738641927662,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/e988c36f-4b46-4e43-9d0e-b6236e11e8c4/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "e988c36f-4b46-4e43-9d0e-b6236e11e8c4",
+      "route_length_m": 250.58424689872882,
+      "length_stratum": "medium"
+    },
+    {
+      "json": "TropicalIsland/ec3056eb-cdd2-47e4-b0ce-68e458048eae/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "ec3056eb-cdd2-47e4-b0ce-68e458048eae",
+      "route_length_m": 201.82776548908598,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/eebcc6c9-8a4e-4b59-9d88-d2eb108f20f2/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "eebcc6c9-8a4e-4b59-9d88-d2eb108f20f2",
+      "route_length_m": 355.5265866299418,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/eee92e21-8b8d-4aba-a77c-103f00386d16/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "eee92e21-8b8d-4aba-a77c-103f00386d16",
+      "route_length_m": 349.17810694652667,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/f244b876-e68e-4541-819e-c458aa66d09a/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "f244b876-e68e-4541-819e-c458aa66d09a",
+      "route_length_m": 397.9643723611433,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/fa574587-99a4-434d-a5be-faf9686cb45d/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "fa574587-99a4-434d-a5be-faf9686cb45d",
+      "route_length_m": 391.72625602190163,
+      "length_stratum": "long"
+    },
+    {
+      "json": "TropicalIsland/fa8ad194-f9bf-41a1-bdeb-cb230af733ba/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "fa8ad194-f9bf-41a1-bdeb-cb230af733ba",
+      "route_length_m": 144.88790393342106,
+      "length_stratum": "short"
+    },
+    {
+      "json": "TropicalIsland/fc8e9651-2793-47bd-92c2-600f8d86ff61/merged_data.json",
+      "scene": "TropicalIsland",
+      "uuid": "fc8e9651-2793-47bd-92c2-600f8d86ff61",
+      "route_length_m": 270.92676034843464,
+      "length_stratum": "medium"
+    }
+  ],
+  "validation": {
+    "unique_episodes": 284,
+    "all_selected_metadata_files_exist": true,
+    "all_original_rows_for_selected_paths_preserved": true,
+    "no_images_or_trajectory_data_copied": true
+  }
+}
