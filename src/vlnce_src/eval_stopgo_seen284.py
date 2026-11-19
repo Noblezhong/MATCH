@@ -26,6 +26,7 @@ DATA_MOUNT = Path(os.environ.get('MATCH_DATA_MOUNT', '/HDD2/TravelUAV_dataset'))
 MODEL_MOUNT = Path(os.environ.get('MATCH_MODEL_MOUNT', '/mnt/remote_models'))
 REMOTE = 'zt@192.168.105.18'
 SERVER_SESSION = f'match_stopgo_seen284_{PORT}_server'
+SERVER_STARTED = False
 
 def call(argv, **kw):
     return subprocess.run([str(a) for a in argv], check=True, **kw)
@@ -99,11 +100,19 @@ def prepare_run(label, rows):
     return run
 
 def start_server(run):
+    global SERVER_STARTED
+    import socket
+    try:
+        with socket.create_connection(('192.168.105.18', PORT), timeout=2):
+            raise RuntimeError(f'Control port {PORT} already occupied; refusing to attach')
+    except (ConnectionRefusedError, TimeoutError):
+        pass
     assert subprocess.run(['ssh',REMOTE,'tmux','has-session','-t',SERVER_SESSION],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0,'Our server session already exists'
     import shlex
     log=Path('/tmp')/f'{SERVER_SESSION}.log'
     command=f'cd /HDD1/code/MATCH && /home/zt/miniconda3/envs/llamauav/bin/python -u airsim_plugin/AirVLNSimulatorServerTool.py --root_path /HDD2/AeroDuo_envs --port {PORT} --gpus 0 --clock_speed 10 > {shlex.quote(str(log))} 2>&1'
     call(['ssh',REMOTE,'tmux','new-session','-d','-s',SERVER_SESSION,shlex.quote(command)])
+    SERVER_STARTED = True
     # Wait only for the scene-control socket; scenes are opened by the evaluator.
     import socket,time
     for _ in range(30):
@@ -177,7 +186,7 @@ def main():
         run_eval(smoke)
         verify_and_metrics(smoke)
         formal=prepare_run('seen284',rows)
-        write_json(formal/'smoke_reference.json',dict(directory=str(REMOTE_OUT/smoke.name),validated=True))
+        write_json(formal/'smoke_reference.json',dict(validated=True,validation=json.loads((smoke/'validation.json').read_text()),metrics=json.loads((smoke/'combined_metrics.json').read_text())))
         run_eval(formal)
         verify_and_metrics(formal)
         print('FORMAL_COMPLETE '+str(REMOTE_OUT/formal.name),flush=True)
@@ -185,9 +194,10 @@ def main():
         write_json((formal or smoke)/'failure.json',dict(error=repr(e)))
         raise
     finally:
-        # Close only scenes owned by our dedicated server, then stop that server.
-        subprocess.run([PYTHON,'-c',f"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',PORT),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
-        subprocess.run(['ssh',REMOTE,'tmux','send-keys','-t',SERVER_SESSION,'C-c'],check=False)
+        if SERVER_STARTED:
+            # Close only scenes owned by our dedicated server, then stop that server.
+            subprocess.run([PYTHON,'-c',f"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',PORT),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
+            subprocess.run(['ssh',REMOTE,'tmux','send-keys','-t',SERVER_SESSION,'C-c'],check=False)
         if formal is not None:
             subprocess.run(['scp',REMOTE+f':/tmp/{SERVER_SESSION}.log',str(formal/'logs/server4090.log')],check=False)
         if formal is not None and (formal/'validation.json').exists():
