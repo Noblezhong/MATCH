@@ -465,6 +465,20 @@ class EventHandler(object):
         self.scene_lock = threading.Lock()
         
         self.port_to_scene = {}
+        self.processes = {}
+
+    def _close_owned(self, ports=None):
+        for port in list(self.processes) if ports is None else ports:
+            process = self.processes.pop(port, None)
+            if process is not None:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    process.wait(timeout=10)
+                except ProcessLookupError:
+                    pass
 
     def ping(self) -> bool:
         return True
@@ -475,7 +489,7 @@ class EventHandler(object):
                 str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
             )
         )
-        KillPorts(self.scene_used_ports)
+        self._close_owned()
         self.scene_used_ports = []
         print(
             "{}\t已关闭所有场景".format(
@@ -487,12 +501,14 @@ class EventHandler(object):
         ports = []
         index = 0
         while len(ports) < len(scen_id_gpu_list):
+            if index >= len(self.scene_ports):
+                raise RuntimeError("Reserved AirSim port range exhausted")
             pid = FromPortGetPid(self.scene_ports[index])
             if pid is None or not isinstance(pid, int):
                 ports.append(self.scene_ports[index])
             index += 1
 
-        KillPorts(ports)
+        # Free ports are never cleared by killing an unrelated owner.
 
         # Occupied GPU 2
         gpus = [scen_id_gpu_list[index][-1] for index in range(len(scen_id_gpu_list))]
@@ -551,8 +567,9 @@ class EventHandler(object):
                     p = subprocess.Popen(
                         subprocess_execute,
                         stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-                        shell=True,
+                        shell=True, start_new_session=True,
                     )
+                    self.processes[ports[index]] = p
                     p_s.append(p)
                 except Exception as e:
                     print(
@@ -604,7 +621,7 @@ class EventHandler(object):
     
     def reopen_scene_from_port(self, port):
 
-        KillPorts([port])
+        self._close_owned([port])
         
         scene_id, gpu_id = self.port_to_scene[port]
         env_info = env_exec_path_dict.get(scene_id)
@@ -620,8 +637,9 @@ class EventHandler(object):
         p = subprocess.Popen(
                         subprocess_execute,
                         stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-                        shell=True,
+                        shell=True, start_new_session=True,
                     )
+        self.processes[port] = p
         
     def reopen_scenes(self, ip: str, scen_id_gpu_list: list, clock_speed=None):
         print(
@@ -667,7 +685,7 @@ class EventHandler(object):
 
         try:
             with self.scene_lock:
-                KillPorts(self.scene_used_ports)
+                self._close_owned()
                 self.scene_used_ports = []
 
             result = True

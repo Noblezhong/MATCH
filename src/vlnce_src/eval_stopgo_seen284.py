@@ -14,15 +14,18 @@ import subprocess
 import sys
 
 REPO = Path(__file__).resolve().parents[2]
-OUT = Path('/home/noble/mnt/R1_new_experiment')
+OUT = Path(os.environ.get('MATCH_OUTPUT_ROOT', '/home/noble/mnt/R1_new_experiment'))
 REMOTE_OUT = Path('/HDD1/code/R1_new_experiment')
-DATA = Path('/HDD2/TravelUAV_dataset/TravelUAV_data')
+DATA = Path(os.environ.get('MATCH_DATA_ROOT', '/HDD2/TravelUAV_dataset/TravelUAV_data'))
 INDEX = REPO/'eval_subsets/seen_valset_stratified284_seed20261117.json'
 SELECTION = INDEX.with_suffix('.selection.json')
 TRACE = REPO/'bandwidth/ucc4g_bandwidth_trace.csv'
-PYTHON = '/home/noble/miniforge3/envs/llamauav/bin/python'
+PYTHON = sys.executable
+PORT = int(os.environ.get('MATCH_SIMULATOR_PORT', '25000'))
+DATA_MOUNT = Path(os.environ.get('MATCH_DATA_MOUNT', '/HDD2/TravelUAV_dataset'))
+MODEL_MOUNT = Path(os.environ.get('MATCH_MODEL_MOUNT', '/mnt/remote_models'))
 REMOTE = 'zt@192.168.105.18'
-SERVER_SESSION = 'match_stopgo_seen284_server'
+SERVER_SESSION = f'match_stopgo_seen284_{PORT}_server'
 
 def call(argv, **kw):
     return subprocess.run([str(a) for a in argv], check=True, **kw)
@@ -37,7 +40,7 @@ def sha(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 def check_mounts():
-    for target, source in [(OUT,REMOTE+':'+str(REMOTE_OUT)),(Path('/HDD2/TravelUAV_dataset'),REMOTE+':/HDD2/TravelUAV_dataset'),(Path('/mnt/remote_models'),REMOTE+':/HDD1/code/MATCH/Model')]:
+    for target, source in [(OUT,REMOTE+':'+str(REMOTE_OUT)),(DATA_MOUNT,REMOTE+':/HDD2/TravelUAV_dataset'),(MODEL_MOUNT,REMOTE+':/HDD1/code/MATCH/Model')]:
         actual=capture(['findmnt','-rn','-M',target,'-o','SOURCE'])
         if actual != source: raise RuntimeError(f'Mount mismatch: {target}: {actual!r}')
 
@@ -72,7 +75,9 @@ def preflight():
 
 def prepare_run(label, rows):
     stamp=datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).strftime('%m%d-%H%M')
-    run=OUT/f'eval_stop_go_{label}_{stamp}_fastx10'
+    base=Path(os.environ.get('MATCH_SMOKE_ROOT','/tmp/match_stopgo_validation')) if 'smoke' in label else OUT
+    base.mkdir(parents=True,exist_ok=True)
+    run=base/f'eval_stop_go_{label}_{stamp}_fastx10'
     run.mkdir(exist_ok=False)
     (run/'inputs').mkdir(); (run/'logs').mkdir()
     write_json(run/'inputs/eval_index.json',rows)
@@ -84,31 +89,32 @@ def prepare_run(label, rows):
         p=REPO/rel
         if p.is_file():
             dest=run/'inputs/code'/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,dest)
-    cfg=dict(label=label,host_inference='192.168.105.17',host_simulator='192.168.105.18',simulator_port=25000,physical_output=str(REMOTE_OUT/run.name),mounted_output=str(run),source_index=str(INDEX),source_index_sha256=sha(INDEX),run_index_sha256=sha(run/'inputs/eval_index.json'),trace_sha256=sha(TRACE),bandwidth='UCC4G; UUID SHA256 first 8 hex digits offset; floor(episode logical ms / 1000); cycle=2004 samples',fast_eval_speedup=10,git_commit=capture(['git','-C',REPO,'rev-parse','HEAD']),git_status=capture(['git','-C',REPO,'status','--short']),collision_policy='episode_collision_v1',expected_episodes=len({r['json'] for r in rows}))
+    cfg=dict(label=label,host_inference=os.environ.get('MATCH_INFERENCE_HOST','192.168.105.17'),host_simulator='192.168.105.18',simulator_port=PORT,physical_output=str(REMOTE_OUT/run.name),mounted_output=str(run),source_index=str(INDEX),source_index_sha256=sha(INDEX),run_index_sha256=sha(run/'inputs/eval_index.json'),trace_sha256=sha(TRACE),bandwidth='UCC4G; UUID SHA256 first 8 hex digits offset; floor(episode logical ms / 1000); cycle=2004 samples',fast_eval_speedup=10,git_commit=capture(['git','-C',REPO,'rev-parse','HEAD']),git_status=capture(['git','-C',REPO,'status','--short']),collision_policy='episode_collision_v1',expected_episodes=len({r['json'] for r in rows}))
     write_json(run/'run_config.json',cfg)
     # Check a new file written through the mount from the actual storage host.
-    remote_path=REMOTE_OUT/run.name/'run_config.json'
-    remote_sha=capture(['ssh',REMOTE,'sha256sum',remote_path]).split()[0]
-    assert remote_sha==sha(run/'run_config.json')
+    if run.parent == OUT:
+        remote_path=REMOTE_OUT/run.name/'run_config.json'
+        remote_sha=capture(['ssh',REMOTE,'sha256sum',remote_path]).split()[0]
+        assert remote_sha==sha(run/'run_config.json')
     return run
 
 def start_server(run):
     assert subprocess.run(['ssh',REMOTE,'tmux','has-session','-t',SERVER_SESSION],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0,'Our server session already exists'
     import shlex
-    log=REMOTE_OUT/run.name/'logs/server4090.log'
-    command=f'cd /HDD1/code/MATCH && bash scripts/airsim_server_4090.sh > {shlex.quote(str(log))} 2>&1'
+    log=Path('/tmp')/f'{SERVER_SESSION}.log'
+    command=f'cd /HDD1/code/MATCH && /home/zt/miniconda3/envs/llamauav/bin/python -u airsim_plugin/AirVLNSimulatorServerTool.py --root_path /HDD2/AeroDuo_envs --port {PORT} --gpus 0 --clock_speed 10 > {shlex.quote(str(log))} 2>&1'
     call(['ssh',REMOTE,'tmux','new-session','-d','-s',SERVER_SESSION,shlex.quote(command)])
     # Wait only for the scene-control socket; scenes are opened by the evaluator.
     import socket,time
     for _ in range(30):
         try:
-            with socket.create_connection(('192.168.105.18',25000),timeout=2): return
+            with socket.create_connection(('192.168.105.18',PORT),timeout=2): return
         except OSError: time.sleep(1)
     raise RuntimeError('4090 scene-control server did not start')
 
 def run_eval(run):
     check_mounts()
-    args=['bash',REPO/'scripts/eval.sh','--simulator_tool_host','192.168.105.18','--simulator_tool_port','25000','--DDP_MASTER_PORT','20001','--eval_json_path',run/'inputs/eval_index.json','--comm_trace_csv_path',run/'inputs/ucc4g_bandwidth_trace.csv','--eval_save_path',run,'--max_episodes_per_scene','80']
+    args=['bash',REPO/'scripts/eval.sh','--simulator_tool_host','192.168.105.18','--simulator_tool_port',str(PORT),'--dataset_path',DATA,'--map_spawn_area_json_path',DATA/'data/meta/map_spawnarea_info.json','--object_name_json_path',DATA/'data/meta/object_description.json','--DDP_MASTER_PORT','20001','--eval_json_path',run/'inputs/eval_index.json','--comm_trace_csv_path',run/'inputs/ucc4g_bandwidth_trace.csv','--eval_save_path',run,'--max_episodes_per_scene','80']
     cfg=json.loads((run/'run_config.json').read_text());cfg['command']=[str(a) for a in args];write_json(run/'run_config.json',cfg)
     print('RUNNING '+str(run),flush=True)
     env=os.environ.copy();env['PATH']=str(Path(PYTHON).parent)+':'+env['PATH'];env['PYTHONUNBUFFERED']='1';env['TOKENIZERS_PARALLELISM']='false';env['MATCH_RUNTIME_CONFIG_DIR']=str(run/'inputs/runtime_vision_config')
@@ -180,9 +186,12 @@ def main():
         raise
     finally:
         # Close only scenes owned by our dedicated server, then stop that server.
-        subprocess.run([PYTHON,'-c',"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',25000),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
+        subprocess.run([PYTHON,'-c',f"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',PORT),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
         subprocess.run(['ssh',REMOTE,'tmux','send-keys','-t',SERVER_SESSION,'C-c'],check=False)
-        if formal is not None and (smoke/'logs/server4090.log').exists():
-            shutil.copy2(smoke/'logs/server4090.log',formal/'logs/server4090.log')
+        if formal is not None:
+            subprocess.run(['scp',REMOTE+f':/tmp/{SERVER_SESSION}.log',str(formal/'logs/server4090.log')],check=False)
+        if formal is not None and (formal/'validation.json').exists():
+            write_json(formal/'smoke_validation.json',json.loads((smoke/'validation.json').read_text()))
+            shutil.rmtree(smoke)
 
 if __name__=='__main__': main()
