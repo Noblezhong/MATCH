@@ -407,7 +407,12 @@ class ContinuousEpisodeState:
     def process_env_output(self, outputs) -> None:
         observations, dones, collisions, oracle_success = [list(x) for x in zip(*outputs)]
         collision_flags, done_flags = self._check_collision_for_continuous(observations, dones, collisions)
-        self.dones = done_flags
+        self.record_env_output(zip(observations, done_flags, collision_flags, oracle_success))
+
+    def record_env_output(self, outputs) -> None:
+        """Store observations and environment status without running depth checks."""
+        observations, dones, collisions, oracle_success = [list(x) for x in zip(*outputs)]
+        self.dones = dones
         self.collisions = [self.cr_state.observe(observations[0])]
         if self.collisions[0]:
             self.dones[0] = True
