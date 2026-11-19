@@ -1,22 +1,8 @@
-"""Continuous + TCM paradigm evaluator (2x2 ablation cell: Continuous w=5 + TCM-ON).
+"""Continuous + TCM using the shared fixed-control-step request runtime.
 
-NEW FILE — the Continuous counterpart of the MATCH paradigm.  It reuses the
-shared building blocks of ``continue_eval.py`` (state, planner, record
-builders) and adds the TCM branch at the three result-application points plus
-the target-lock execution.  ``continue_eval.py`` itself is NOT modified.
-
-Fidelity contract:
-  - ``--trajcorr_mode off``: behavior identical to ``continue_eval.py``
-    (the audited Continuous row; must reproduce SR 25.7).
-  - ``--trajcorr_mode on``: Continuous + TCM (C2 validation in the main
-    environment).
-
-record_type vocabulary is unchanged: {decision, execution, decision_stop,
-episode_end}.  TCM fields are extra keys only (compute_metrics auto-detection
-stays continuous).
-
-Keep in sync with ``continue_eval.py``: if its loop changes, the loop below
-must be re-checked.
+TCM adds correction and target locking; ordinary request cadence and
+empty-buffer waiting follow the same base runtime as Continuous-only.
+Historical evaluation results predate this runtime correction.
 """
 
 import copy
@@ -32,6 +18,7 @@ import torch
 import tqdm
 
 sys.path.append(str(Path(str(os.getcwd())).resolve()))
+from src.vlnce_src.continuous_runtime import check_evaluation, FixedStepEdgePlanner as LatestOnlyEdgePlanner, run_decision_cycle as _run_decision_cycle, request_due
 
 from assist import Assist
 from src.common.param import args, data_args, model_args
@@ -128,6 +115,7 @@ def eval(
                             ignore_tiny_diff=True,
                         )
                         episode_clock = FastEvalClock(bool(args.fast_eval), args.fast_eval_speedup)
+                        episode_clock.reset(eval_env.initial_obs_latency_ms)
                         tcm = TcmRuntime(trajcorr_enabled, delta_cor_m)
                         planner = LatestOnlyEdgePlanner(
                             model_wrapper,
@@ -135,13 +123,13 @@ def eval(
                             enable_comm_delay,
                             clock=episode_clock,
                         )
+                        planner.bind_state(state, lambda event: _write_jsonl_line(profile_fp, dict(event, seq_names=[env_batchs[0]["seq_name"]], map_names=[env_batchs[0]["map_name"]])))
+                        planner.control_step = lambda: control_step
                         request_counter = 0
                         control_step = 0
-                        executed_since_decision = 0
                         active_traj: List[List[float]] = []
                         active_index = 0
                         active_result: Optional[Any] = None
-                        pending_snapshot: Optional[Snapshot] = None
 
                         warmup_snapshot = state.build_snapshot(request_counter, control_step)
                         warmup_snapshot.submitted_logical_ms = episode_clock.now_ms if episode_clock.enabled else None
@@ -254,9 +242,6 @@ def eval(
                                     active_result = applied_result
                                     trajectory_switch_applied = True
                                     current_pose = state.current_sim_pose()
-                                    if pending_snapshot is not None and not planner.has_inflight() and not tcm.lock_active:
-                                        planner.submit(pending_snapshot)
-                                        pending_snapshot = None
                                     decision_record = _build_planner_decision_record(
                                         env_batchs[0],
                                         applied_result,
@@ -365,8 +350,8 @@ def eval(
 
                                 active_index += chunk_size
                                 control_step += 1
-                                executed_since_decision += chunk_size
                                 state.sync_runtime_status_from_sim()
+                                check_evaluation(state, model_wrapper, episode_clock, control_step)
 
                                 lock_completion = None
                                 if tcm.lock_active:
@@ -380,12 +365,11 @@ def eval(
                                     not state.dones[0]
                                     and not tcm.lock_active
                                     and (
-                                        active_index >= len(active_traj)
-                                        or executed_since_decision >= chunk_waypoints
+                                        request_due(control_step, chunk_waypoints)
                                     )
                                 )
                                 if should_request_decision:
-                                    request_counter, pending_snapshot, decision_obs_latency_ms, dino_latency_ms, dino_predicted_this_step = _run_decision_cycle(
+                                    request_counter, _, decision_obs_latency_ms, dino_latency_ms, dino_predicted_this_step = _run_decision_cycle(
                                         state,
                                         eval_env,
                                         model_wrapper,
@@ -395,7 +379,6 @@ def eval(
                                         episode_clock,
                                     )
                                     decision_observation_pose = state.current_sim_pose()
-                                    executed_since_decision = 0
 
                                 action_latency_ms = float(action_times["airsim_action_latency_ms"])
                                 record = {
@@ -458,7 +441,8 @@ def eval(
                                     active_traj = []
                                     active_index = 0
                                     active_result = None
-                                    executed_since_decision = 0
+                                    if not state.dones[0]:
+                                        request_counter, _, _, _, _ = _run_decision_cycle(state, eval_env, model_wrapper, planner, request_counter, control_step, episode_clock, reason="module_refresh")
                                 if state.dones[0] and dino_predicted_this_step and not state.collisions[0]:
                                     stop_pose = state.current_sim_pose()
                                     stop_record = {
@@ -503,27 +487,14 @@ def eval(
                                     active_traj = []
                                     active_index = 0
                                     active_result = None
-                                    executed_since_decision = 0
+                                    if not state.dones[0]:
+                                        request_counter, _, _, _, _ = _run_decision_cycle(state, eval_env, model_wrapper, planner, request_counter, control_step, episode_clock, reason="module_refresh")
                                     continue
-                                if not state.dones[0]:
-                                    request_counter, pending_snapshot, _, _, _ = _run_decision_cycle(
-                                        state,
-                                        eval_env,
-                                        model_wrapper,
-                                        planner,
-                                        request_counter,
-                                        control_step,
-                                        episode_clock,
-                                    )
-                                    executed_since_decision = 0
 
                                 if state.dones[0]:
                                     state.maybe_finalize()
                                     break
 
-                                if pending_snapshot is not None and not planner.has_inflight():
-                                    planner.submit(pending_snapshot)
-                                    pending_snapshot = None
 
                                 hover_wait_start = time.perf_counter()
                                 hover_logical_start = episode_clock.now_ms
@@ -584,6 +555,10 @@ def eval(
                             state.maybe_finalize(force=True)
                         episode_record = {
                             "record_type": "episode_end",
+                            "initial_obs_latency_ms": float(eval_env.initial_obs_latency_ms),
+                            "initial_uplink_start_logical_ms": float(warmup_result.submitted_logical_ms),
+                            "initial_uplink_latency_ms": float(warmup_result.uplink_latency_ms),
+                            **state.cr_state.metadata(),
                             "seq_names": [env_batchs[0]["seq_name"]],
                             "map_names": [env_batchs[0]["map_name"]],
                             "control_steps": int(control_step),

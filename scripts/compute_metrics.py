@@ -88,6 +88,8 @@ def detect_method(path: Path, invalid: list[int]) -> str:
         if record is None:
             invalid.append(line_number)
             continue
+        if record.get("evaluation_method") in ("stopgo", "continuous", "random"):
+            return record["evaluation_method"]
         sample += 1
         if sample > 500:
             break
@@ -319,6 +321,9 @@ def extract_action_line(path: Path, invalid: list[int], method: str, wait_mode: 
                 if wait_mode == "approved":
                     wait_parts[ep].append(_number(record, "execution_post_obs_latency_ms", 0.0))
                     wait_parts[ep].append(_number(record, "execution_post_dino_latency_ms", 0.0))
+            if wait_mode == "approved" and kind == "evaluation_check":
+                wait_parts[ep].append(_number(record, "obs_latency_ms", 0.0))
+                wait_parts[ep].append(_number(record, "groundingdino_latency_ms", 0.0))
             if wait_mode == "approved" and kind in ("decision", "decision_stop"):
                 # A single hover event is written to both the decision and the
                 # execution record of the same loop iteration, carrying the
@@ -339,7 +344,7 @@ def extract_action_line(path: Path, invalid: list[int], method: str, wait_mode: 
             wait = terminals[ep].get("logical_elapsed_ms", 0.0) - action_ms[ep]
         if wait < -1e-6:
             raise ValueError(f"negative waiting time in episode {ep}: {wait}ms")
-        events[ep] = {"shifts": shifts[ep], "wait_ms": max(0.0, wait)}
+        events[ep] = {"shifts": shifts[ep], "wait_ms": max(0.0, wait), "flight_ms": action_ms[ep]}
     return terminals, events, records
 
 
@@ -540,6 +545,7 @@ EXTRACTORS = {
     "tc": extract_tc,
     "ppo": extract_ppo,
     "continuous": extract_action_line,
+    "random": extract_action_line,
     "stopgo": extract_action_line,
     "rule": extract_rule,
 }
@@ -599,12 +605,17 @@ def main() -> None:
     duplicate_terminals = 0
     input_collision_policies = set()
     for input_path in inputs:
-        if method == "continuous":
+        if method in ("continuous", "random"):
             file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "continuous", wait_mode)
         elif method == "stopgo":
             file_terminals, file_events, file_records = extract_action_line(input_path, invalid, "stopgo", wait_mode)
         else:
             file_terminals, file_events, file_records = EXTRACTORS[method](input_path, invalid)
+        if any(r.get("timing_contract") == "episode_logical_v2" for r in file_terminals.values()):
+            wait_mode = "e2e-action"
+            for ep, terminal in file_terminals.items():
+                if terminal.get("timing_contract") == "episode_logical_v2":
+                    file_events[ep]["wait_ms"] = max(0.0, terminal["logical_elapsed_ms"] - file_events[ep]["flight_ms"])
         input_collision_policies.update(r.get("collision_policy", "legacy_terminal_and_saved_frame") for r in file_terminals.values())
         if len(input_collision_policies) > 1:
             raise ValueError("mixed collision policies across input segments")

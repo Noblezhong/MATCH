@@ -6,7 +6,7 @@ CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/continue_eval.py" \
     --name TravelLLMPCChunkWPCom \
     --gpu_id 0 \
     --simulator_tool_port 25000 \
-    --DDP_MASTER_PORT 80005 \
+    --DDP_MASTER_PORT 20001 \
     --batchSize 1 \
     --always_help True \
     --use_gt True \

@@ -25,6 +25,7 @@ class CommonArguments:
     comm_trace_csv_path: Optional[str] = field(default=None, metadata={"help": "bandwidth trace csv path"})
     fast_eval: bool = field(default=False, metadata={"help": "run evaluation with original-speed logical timing"})
     fast_eval_speedup: float = field(default=5.0, metadata={"help": "AirSim ClockSpeed used by fast evaluation"})
+    continuous_request_timeout_ms: float = field(default=30000.0, metadata={"help": "logical upload and processing timeout while hovering"})
     chunk_waypoints: int = field(default=1, metadata={"help": "continuous eval decision interval in executed waypoints"})
     max_control_steps: int = field(
         default=1000,

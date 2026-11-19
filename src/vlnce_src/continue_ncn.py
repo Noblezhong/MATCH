@@ -15,6 +15,7 @@ import torch
 import tqdm
 
 sys.path.append(str(Path(str(os.getcwd())).resolve()))
+from src.vlnce_src.continuous_runtime import check_evaluation, FixedStepEdgePlanner as LatestOnlyEdgePlanner, run_decision_cycle as _run_decision_cycle, request_due
 
 from assist import Assist
 from src.common.param import args, data_args, model_args
@@ -311,406 +312,11 @@ def _load_object_description():
         return {item["object_name"]: item["object_desc"] for item in json.load(handle)}
 
 
-class ContinuousEpisodeState:
-    """Per-episode state for the Continuous evaluation paradigm.
-
-    ============
-    TERMINATION — see ``rule_based_eval.py`` ``ContinuousEpisodeState`` for the
-    authoritative contract.  This class shares the same three termination
-    sources (collision / DINO / NE-trend) plus safety caps.  DO NOT modify
-    termination logic here without updating ALL paradigms.
-    ============
-    """
-
-    def __init__(self, env_batch, eval_env: AirVLNENV, assist: Assist, ignore_tiny_diff: bool = False):
-        self.eval_env = eval_env
-        self.assist = assist
-        self.ignore_tiny_diff = ignore_tiny_diff
-        self.env_batch = env_batch
-        self.target_position = env_batch["object_position"]
-        self.traj = env_batch["trajectory"]
-        self.ori_data_dir = env_batch["trajectory_dir"]
-        self.object_info = _load_object_description().get(env_batch["object"]["asset_name"].replace("AA", ""))
-
-        self.episode: List[Dict[str, Any]] = []
-        self.dones = [False]
-        self.collisions = [False]
-        self.predict_dones = [False]
-        self.success = False
-        self.oracle_success = False
-        self.early_end = False
-        self.skip_saved = False
-        self.distance_to_ends: List[float] = []
-        self.request_ne_history: List[float] = []
-        self.last_observation_timestamp: Optional[int] = None
-
-        outputs = self.eval_env.reset()
-        self.process_env_output(outputs)
-
-    def _check_collision_for_continuous(self, observations, dones, collisions):
-        if not self.ignore_tiny_diff:
-            return self.assist.check_collision_by_depth([self.episode], observations, collisions, dones)
-        return check_collision_without_tiny_diff([self.episode], observations, collisions, dones)
-
-    def _append_unique_observations(self, observations: List[Dict[str, Any]]) -> None:
-        for observation in observations:
-            ts = observation["sensors"]["state"]["timestamp"]
-            if self.last_observation_timestamp is not None and ts <= self.last_observation_timestamp:
-                continue
-            self.episode.append(observation)
-            self.last_observation_timestamp = ts
-            self.distance_to_ends.append(self._calculate_distance(observation))
-
-    def _calculate_distance(self, observation: Dict[str, Any]) -> float:
-        return float(
-            np.linalg.norm(
-                np.asarray(observation["sensors"]["state"]["position"], dtype=np.float64)
-                - np.asarray(self.target_position, dtype=np.float64)
-            )
-        )
-
-    REQUEST_REGRESSION_COUNT = 10
-
-    def record_request_ne(self) -> None:
-        """Record NE after a REQUEST completes and check regression.
-
-        Distance regression is measured per **REQUEST cycle**, matching the
-        original stop-and-go paradigm.
-        """
-        current_ne = self._calculate_distance_from_position(self.current_sim_pose())
-        self.request_ne_history.append(current_ne)
-        if len(self.request_ne_history) < self.REQUEST_REGRESSION_COUNT:
-            return
-        recent = self.request_ne_history[-self.REQUEST_REGRESSION_COUNT:]
-        if all(recent[i] <= recent[i + 1] for i in range(len(recent) - 1)):
-            self.dones[0] = True
-
-    def _calculate_distance_from_position(self, position) -> float:
-        return float(
-            np.linalg.norm(
-                np.asarray(position, dtype=np.float64)
-                - np.asarray(self.target_position, dtype=np.float64)
-            )
-        )
-
-    def current_sim_pose(self) -> List[float]:
-        return copy.deepcopy(self.eval_env.sim_states[0].pose[0:3])
-
-    def sync_runtime_status_from_sim(self) -> None:
-        sim_state = self.eval_env.sim_states[0]
-        if bool(getattr(sim_state, "is_collisioned", False)):
-            self.collisions[0] = True
-            self.dones[0] = True
-        if bool(getattr(sim_state, "is_end", False)):
-            self.dones[0] = True
-        if bool(getattr(sim_state, "oracle_success", False)):
-            self.oracle_success = True
-        self.distance_to_ends.append(self._calculate_distance_from_position(self.current_sim_pose()))
-
-    def process_env_output(self, outputs) -> None:
-        observations, dones, collisions, oracle_success = [list(x) for x in zip(*outputs)]
-        collision_flags, done_flags = self._check_collision_for_continuous(observations, dones, collisions)
-        self.dones = done_flags
-        self.collisions = collision_flags
-        self.oracle_success = bool(oracle_success[0])
-        self._append_unique_observations(observations[0])
-
-    def build_snapshot(
-        self,
-        request_id: int,
-        submitted_step: int,
-        obs_latency_ms: float = 0.0,
-        groundingdino_latency_ms: float = 0.0,
-    ) -> Snapshot:
-        latest = self.episode[-1]
-        return Snapshot(
-            request_id=request_id,
-            submitted_step=submitted_step,
-            episode=copy.deepcopy(self.episode),
-            target_position=copy.deepcopy(self.target_position),
-            object_info=self.object_info,
-            assist_notice=self.assist.get_assist_notice(
-                [self.episode],
-                [self.traj],
-                [self.object_info],
-                [self.target_position],
-            )[0],
-            observation_timestamp=int(latest["sensors"]["state"]["timestamp"]),
-            observation_pose=copy.deepcopy(latest["sensors"]["state"]["position"][0:3]),
-            submitted_perf_time=time.perf_counter(),
-            submitted_wall_time=time.time(),
-            obs_latency_ms=float(obs_latency_ms),
-            groundingdino_latency_ms=float(groundingdino_latency_ms),
-        )
-
-    def run_dino_and_update_metric(self, model_wrapper: ProfileTravelModelWrapper) -> float:
-        dino_start = time.perf_counter()
-        self.predict_dones = model_wrapper.predict_done([self.episode], [self.object_info])
-        dino_latency_ms = (time.perf_counter() - dino_start) * 1000.0
-        if not self.dones[0] and self.predict_dones[0]:
-            current_distance = self.distance_to_ends[-1]
-            if current_distance <= 20:
-                self.success = True
-                self.dones[0] = True
-            elif current_distance > 20:
-                self.early_end = True
-        return dino_latency_ms
-
-    def maybe_finalize(self, force=False) -> bool:
-        if self.skip_saved:
-            return True
-        if force or self.dones[0]:
-            prefix = ""
-            if self.success:
-                prefix = "success_"
-            elif self.oracle_success:
-                prefix = "oracle_"
-            new_traj_name = prefix + self.ori_data_dir.split("/")[-1]
-            new_traj_dir = os.path.join(args.eval_save_path, new_traj_name)
-            save_to_dataset_eval(self.episode, new_traj_dir, self.ori_data_dir)
-            self.skip_saved = True
-        return self.skip_saved
+from src.vlnce_src.continue_eval import ContinuousEpisodeState
 
 
-def _run_decision_cycle(
-    state: ContinuousEpisodeState,
-    eval_env: AirVLNENV,
-    model_wrapper: ProfileTravelModelWrapper,
-    planner: "LatestOnlyEdgePlanner",
-    request_counter: int,
-    control_step: int,
-    clock: FastEvalClock,
-):
-    decision_obs_latency_ms = 0.0
-    dino_latency_ms = 0.0
-    dino_predicted_this_step = False
-    pending_snapshot = None
-
-    obs_start = time.perf_counter()
-    outputs = eval_env.get_obs()
-    obs_end = time.perf_counter()
-    state.process_env_output(outputs)
-    decision_obs_latency_ms = float((obs_end - obs_start) * 1000.0)
-    clock.advance_blocking(decision_obs_latency_ms)
-
-    if not state.dones[0]:
-        state.record_request_ne()
-
-    if not state.dones[0]:
-        dino_latency_ms = state.run_dino_and_update_metric(model_wrapper)
-        clock.advance_blocking(dino_latency_ms)
-        dino_predicted_this_step = bool(state.predict_dones[0])
-
-    if not state.dones[0]:
-        request_counter += 1
-        next_snapshot = state.build_snapshot(
-            request_counter,
-            control_step,
-            obs_latency_ms=decision_obs_latency_ms,
-            groundingdino_latency_ms=dino_latency_ms,
-        )
-        next_snapshot.submitted_logical_ms = clock.now_ms if clock.enabled else None
-        if planner.has_inflight():
-            pending_snapshot = next_snapshot
-        else:
-            submitted = planner.submit(next_snapshot)
-            if not submitted:
-                pending_snapshot = next_snapshot
-
-    return request_counter, pending_snapshot, decision_obs_latency_ms, dino_latency_ms, dino_predicted_this_step
 
 
-class LatestOnlyEdgePlanner:
-    def __init__(
-        self,
-        model_wrapper: ProfileTravelModelWrapper,
-        bandwidth_trace: BandwidthTrace,
-        enable_comm_delay: bool,
-        clock: Optional[FastEvalClock] = None,
-    ):
-        self.model_wrapper = model_wrapper
-        self.bandwidth_trace = bandwidth_trace
-        self.enable_comm_delay = enable_comm_delay
-        self.clock = clock or FastEvalClock(False)
-        self.fast_eval = bool(self.clock.enabled)
-        self._bw_t0_ms = float(self.clock.now_ms)  # episode logical-time origin
-        self._condition = threading.Condition()
-        self._pending_snapshot: Optional[Snapshot] = None
-        self._result: Optional[PlannerResult] = None
-        self._has_result = False
-        self._error: Optional[BaseException] = None
-        self._inflight = False
-        self._active_snapshot: Optional[Snapshot] = None
-        self._edge_arrival_logical_ms: Optional[float] = None
-        self._closed = False
-        self._thread = threading.Thread(target=self._worker_loop, daemon=True)
-        self._thread.start()
-
-    def submit(self, snapshot: Snapshot) -> bool:
-        with self._condition:
-            if self._closed or self._inflight or self._pending_snapshot is not None:
-                return False
-            snapshot.planner_started_logical_ms = self.clock.now_ms if self.fast_eval else None
-            self._pending_snapshot = snapshot
-            self._condition.notify_all()
-            return True
-
-    def has_inflight(self) -> bool:
-        with self._condition:
-            return self._inflight or self._pending_snapshot is not None or self._has_result
-
-    def predicted_remaining_ms(self, estimated_compute_ms: float) -> Optional[float]:
-        """Predict pending edge completion in the existing logical-time model."""
-        with self._condition:
-            snapshot = self._active_snapshot or self._pending_snapshot
-            if snapshot is None:
-                return 0.0 if self._has_result else None
-            start_ms = snapshot.planner_started_logical_ms
-            if start_ms is None:
-                start_ms = snapshot.submitted_logical_ms
-            if start_ms is None:
-                return None
-            _, payload_bits, _ = estimate_uplink_payload_bits_from_episodes([snapshot.episode])
-            bw_at = float(start_ms) - self._bw_t0_ms
-            bandwidth_bps = self.bandwidth_trace.bandwidth_at_ms(bw_at)
-            uplink_ms = calculate_latency_ms(payload_bits, bandwidth_bps) if self.enable_comm_delay else 0.0
-            ready_ms = float(start_ms) + float(uplink_ms) + max(0.0, float(estimated_compute_ms))
-            return max(0.0, ready_ms - float(self.clock.now_ms))
-
-    def poll_result(self) -> Optional[PlannerResult]:
-        with self._condition:
-            if self._error is not None:
-                raise self._error
-            while (
-                self.fast_eval
-                and not self._has_result
-                and self._inflight
-                and self._edge_arrival_logical_ms is not None
-                and self.clock.now_ms >= self._edge_arrival_logical_ms
-            ):
-                self._condition.wait(timeout=0.05)
-                if self._error is not None:
-                    raise self._error
-            if not self._has_result:
-                return None
-            if self.fast_eval and self._result.ready_logical_ms is not None and self.clock.now_ms < self._result.ready_logical_ms:
-                return None
-            result = self._result
-            self._result = None
-            self._has_result = False
-            self._edge_arrival_logical_ms = None
-            return result
-
-    def wait_result(self) -> PlannerResult:
-        with self._condition:
-            if self._error is not None:
-                raise self._error
-            while not self._has_result:
-                if self._error is not None:
-                    raise self._error
-                self._condition.wait(timeout=0.05)
-            if self.fast_eval:
-                self.clock.advance_to(self._result.ready_logical_ms)
-            result = self._result
-            self._result = None
-            self._has_result = False
-            self._edge_arrival_logical_ms = None
-            return result
-
-    def close(self) -> None:
-        with self._condition:
-            self._closed = True
-            self._condition.notify_all()
-        self._thread.join()
-
-    def _worker_loop(self) -> None:
-        while True:
-            with self._condition:
-                while not self._closed and self._pending_snapshot is None:
-                    self._condition.wait(timeout=0.05)
-                if self._closed:
-                    return
-                snapshot = self._pending_snapshot
-                self._pending_snapshot = None
-                self._inflight = True
-                self._active_snapshot = snapshot
-
-            try:
-                result = self._run_snapshot(snapshot)
-            except BaseException as exc:
-                with self._condition:
-                    self._error = exc
-                    self._inflight = False
-                    self._active_snapshot = None
-                    self._condition.notify_all()
-                return
-
-            with self._condition:
-                self._result = result
-                self._has_result = True
-                self._inflight = False
-                self._active_snapshot = None
-                self._condition.notify_all()
-
-    def _run_snapshot(self, snapshot: Snapshot) -> PlannerResult:
-        episodes = [snapshot.episode]
-        payload_bytes, payload_bits, payload_mb = estimate_uplink_payload_bits_from_episodes(episodes)
-        timing_start = snapshot.planner_started_logical_ms
-        if timing_start is None:
-            timing_start = snapshot.submitted_logical_ms
-        if timing_start is not None:
-            bw_at = float(timing_start) - self._bw_t0_ms
-        else:
-            bw_at = float(self.clock.now_ms) - self._bw_t0_ms
-        bandwidth_bps = self.bandwidth_trace.bandwidth_at_ms(bw_at)
-        uplink_latency_ms = calculate_latency_ms(payload_bits, bandwidth_bps) if self.enable_comm_delay else 0.0
-        if self.fast_eval and timing_start is not None:
-            with self._condition:
-                self._edge_arrival_logical_ms = float(timing_start + uplink_latency_ms)
-                self._condition.notify_all()
-        if uplink_latency_ms > 0:
-            divisor = self.clock.speedup if self.fast_eval else 1.0
-            time.sleep(uplink_latency_ms / (1000.0 * divisor))
-
-        with torch.inference_mode():
-            inputs, rot_to_targets = self.model_wrapper.prepare_inputs(
-                episodes,
-                [snapshot.target_position],
-                [snapshot.assist_notice],
-            )
-            refined_waypoints, profile_info = self.model_wrapper.run_profiled(
-                inputs=inputs,
-                episodes=episodes,
-                rot_to_targets=rot_to_targets,
-            )
-        fast_timing = FastResultTiming(
-            timing_start,
-            uplink_latency_ms,
-            float(profile_info["llm_latency_ms"]),
-            float(profile_info["traj_latency_ms"]),
-        )
-        return PlannerResult(
-            request_id=snapshot.request_id,
-            submitted_step=snapshot.submitted_step,
-            observation_timestamp=snapshot.observation_timestamp,
-            observation_pose=copy.deepcopy(snapshot.observation_pose),
-            submitted_perf_time=snapshot.submitted_perf_time,
-            submitted_wall_time=snapshot.submitted_wall_time,
-            ready_wall_time=time.time(),
-            obs_latency_ms=float(snapshot.obs_latency_ms),
-            groundingdino_latency_ms=float(snapshot.groundingdino_latency_ms),
-            llm_latency_ms=float(profile_info["llm_latency_ms"]),
-            traj_latency_ms=float(profile_info["traj_latency_ms"]),
-            uplink_payload_bits=int(payload_bits),
-            uplink_payload_mb=float(payload_mb),
-            uplink_bandwidth_mbps=float(bandwidth_bps / 1_000_000.0),
-            uplink_latency_ms=float(uplink_latency_ms),
-            llm_output=copy.deepcopy(profile_info["llm_output"]),
-            refined_waypoints=np.asarray(refined_waypoints[0]).tolist(),
-            submitted_logical_ms=snapshot.submitted_logical_ms,
-            edge_arrival_logical_ms=fast_timing.edge_arrival_logical_ms,
-            ready_logical_ms=fast_timing.ready_logical_ms,
-        )
 
 
 def _run_ncn_action(
@@ -853,18 +459,19 @@ def eval(
                             ignore_tiny_diff=True,
                         )
                         episode_clock = FastEvalClock(bool(args.fast_eval), args.fast_eval_speedup)
+                        episode_clock.reset(eval_env.initial_obs_latency_ms)
                         planner = LatestOnlyEdgePlanner(
                             model_wrapper,
                             bandwidth_trace,
                             enable_comm_delay,
                             clock=episode_clock,
                         )
+                        planner.bind_state(state, lambda event: _write_jsonl_line(profile_fp, dict(event, seq_names=[env_batchs[0]["seq_name"]], map_names=[env_batchs[0]["map_name"]])))
+                        planner.control_step = lambda: control_step
                         request_counter = 0
                         control_step = 0
-                        executed_since_decision = 0
                         active_traj: List[List[float]] = []
                         active_index = 0
-                        pending_snapshot: Optional[Snapshot] = None
 
                         warmup_snapshot = state.build_snapshot(request_counter, control_step)
                         warmup_snapshot.submitted_logical_ms = episode_clock.now_ms if episode_clock.enabled else None
@@ -928,9 +535,6 @@ def eval(
                                 active_index = 0
                                 trajectory_switch_applied = True
                                 current_pose = state.current_sim_pose()
-                                if pending_snapshot is not None and not planner.has_inflight():
-                                    planner.submit(pending_snapshot)
-                                    pending_snapshot = None
                                 decision_record = _build_planner_decision_record(
                                     env_batchs[0],
                                     applied_result,
@@ -979,20 +583,19 @@ def eval(
 
                                 active_index += chunk_size
                                 control_step += 1
-                                executed_since_decision += chunk_size
                                 state.sync_runtime_status_from_sim()
+                                check_evaluation(state, model_wrapper, episode_clock, control_step)
 
                                 decision_obs_latency_ms = 0.0
                                 decision_observation_pose = None
                                 should_request_decision = (
                                     not state.dones[0]
                                     and (
-                                        active_index >= len(active_traj)
-                                        or executed_since_decision >= chunk_waypoints
+                                        request_due(control_step, chunk_waypoints)
                                     )
                                 )
                                 if should_request_decision:
-                                    request_counter, pending_snapshot, decision_obs_latency_ms, dino_latency_ms, dino_predicted_this_step = _run_decision_cycle(
+                                    request_counter, _, decision_obs_latency_ms, dino_latency_ms, dino_predicted_this_step = _run_decision_cycle(
                                         state,
                                         eval_env,
                                         model_wrapper,
@@ -1002,7 +605,6 @@ def eval(
                                         episode_clock,
                                     )
                                     decision_observation_pose = state.current_sim_pose()
-                                    executed_since_decision = 0
 
                                 action_latency_ms = float(action_times["airsim_action_latency_ms"])
                                 record = {
@@ -1093,25 +695,11 @@ def eval(
                                     summary_records.append(stop_record)
                                     _print_decision_profile_line(episode_idx, control_step, stop_record)
                             else:
-                                if not state.dones[0]:
-                                    request_counter, pending_snapshot, _, _, _ = _run_decision_cycle(
-                                        state,
-                                        eval_env,
-                                        model_wrapper,
-                                        planner,
-                                        request_counter,
-                                        control_step,
-                                        episode_clock,
-                                    )
-                                    executed_since_decision = 0
 
                                 if state.dones[0]:
                                     state.maybe_finalize()
                                     break
 
-                                if pending_snapshot is not None and not planner.has_inflight():
-                                    planner.submit(pending_snapshot)
-                                    pending_snapshot = None
 
                                 predicted_remaining_ms = planner.predicted_remaining_ms(edge_latency.compute_ms)
                                 if (
@@ -1127,6 +715,8 @@ def eval(
                                         "buffer_insufficient_for_predicted_edge_response",
                                     )
                                     control_step += 1
+                                    if request_due(control_step, chunk_waypoints) and not state.dones[0]:
+                                        request_counter, _, _, _, _ = _run_decision_cycle(state, eval_env, model_wrapper, planner, request_counter, control_step, episode_clock)
                                     ncn_actions_in_interval += 1
                                     _write_jsonl_line(profile_fp, record)
                                     summary_records.append(record)
@@ -1184,6 +774,10 @@ def eval(
                             state.maybe_finalize(force=True)
                         episode_record = {
                             "record_type": "episode_end",
+                            "initial_obs_latency_ms": float(eval_env.initial_obs_latency_ms),
+                            "initial_uplink_start_logical_ms": float(warmup_result.submitted_logical_ms),
+                            "initial_uplink_latency_ms": float(warmup_result.uplink_latency_ms),
+                            **state.cr_state.metadata(),
                             "seq_names": [env_batchs[0]["seq_name"]],
                             "map_names": [env_batchs[0]["map_name"]],
                             "control_steps": int(control_step),

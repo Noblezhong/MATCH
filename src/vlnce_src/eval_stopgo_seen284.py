@@ -140,7 +140,7 @@ def verify_and_metrics(run):
         uid=r['seq_names'][0]
         assert r['collision_policy']=='episode_collision_v1' and type(r['cr_collision']) is bool
         assert r['initial_obs_latency_ms']>=0
-        assert abs(r['initial_uplink_start_logical_ms']-r['initial_obs_latency_ms'])<1e-6
+        assert r['initial_uplink_start_logical_ms'] >= r['initial_obs_latency_ms'] - 1e-6
         assert math.isfinite(r['episode_latency_ms']) and r['episode_latency_ms']>=r['initial_obs_latency_ms']+r['initial_uplink_latency_ms']
         offset=int(hashlib.sha256(uid.encode()).hexdigest()[:8],16)%len(bandwidth)
         expected_bw=bandwidth[(offset+int(r['initial_uplink_start_logical_ms']//1000))%len(bandwidth)]

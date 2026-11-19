@@ -1,7 +1,8 @@
 # Random joint-action scheduler (uniform sampling of the AHS decision space).
 # Rule-based UAV-VLN scheduler evaluation with communication delay.
 
-root_dir=.
+root_dir="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root_dir"
 enable_comm_delay=True
 
 CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/random_eval.py" \
@@ -10,7 +11,7 @@ CUDA_VISIBLE_DEVICES=0 python -u "$root_dir/src/vlnce_src/random_eval.py" \
     --random_seed ${SEED:-0} \
     --gpu_id 0 \
     --simulator_tool_port 25000 \
-    --DDP_MASTER_PORT 80005 \
+    --DDP_MASTER_PORT 20001 \
     --batchSize 1 \
     --always_help True \
     --use_gt True \
