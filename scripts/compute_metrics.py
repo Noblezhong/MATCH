@@ -317,7 +317,7 @@ def extract_action_line(path: Path, invalid: list[int], method: str, wait_mode: 
                 if time_ms is not None and state_m is not None:
                     shifts[ep].append((time_ms / 1000.0, state_m))
             elif kind == "execution":
-                action_ms[ep] += _number(record, "action_sim_time_ms", 0.0)
+                action_ms[ep] += _number(record, "action_eval_time_ms", _number(record, "action_sim_time_ms", 0.0))
                 if wait_mode == "approved":
                     wait_parts[ep].append(_number(record, "execution_post_obs_latency_ms", 0.0))
                     wait_parts[ep].append(_number(record, "execution_post_dino_latency_ms", 0.0))

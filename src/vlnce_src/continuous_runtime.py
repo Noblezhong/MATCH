@@ -1,5 +1,6 @@
 """Logical-arrival ordered edge execution; scheduling policy belongs to callers."""
 import copy, json, math, time
+from threading import Condition, Lock, Thread
 from types import SimpleNamespace as NS
 import numpy as np
 import torch
@@ -27,20 +28,25 @@ def _capture(state, clock, process_output):
     clock.advance_blocking(ms)
     return ms
 
-def check_evaluation(state, model, clock, step, write=lambda r: None):
+def check_evaluation(state, model, clock, step, write=lambda r: None, *, account_ne=False):
     if step == 0 or step % 5 or step == getattr(state, '_evaluation_checked_step', 0):
         return None
     state._evaluation_checked_step = step
     obs = capture(state, clock)
+    ne_start = time.perf_counter() if account_ne else None
     ne = state._calculate_distance_from_position(state.current_sim_pose())
     state.request_ne_history.append(ne)
     if target_distance_increasing_for_10frames(state.request_ne_history):
         state.dones[0] = True
+    ne_ms = (time.perf_counter() - ne_start) * 1000.0 if account_ne else 0.0
+    if account_ne:
+        clock.advance_blocking(ne_ms)
     dino = 0.0
     if not state.dones[0]:
         dino = state.run_dino_and_update_metric(model)
         clock.advance_blocking(dino)
-    write(dict(record_type='evaluation_check', control_step=step, ne_m=ne, obs_latency_ms=obs, groundingdino_latency_ms=dino, **clock.metadata()))
+    evaluation_fields = {'ne_check_latency_ms': ne_ms} if account_ne else {}
+    write(dict(record_type='evaluation_check', control_step=step, ne_m=ne, obs_latency_ms=obs, groundingdino_latency_ms=dino, **evaluation_fields, **clock.metadata()))
     return obs
 
 def run_decision_cycle(state, eval_env, model, planner, counter, step, clock, reason='periodic'):
@@ -161,6 +167,213 @@ class AsyncEdgePlanner:
         self.jobs.clear()
 FixedStepEdgePlanner = AsyncEdgePlanner
 
+
+class NavigationEdgePlanner(AsyncEdgePlanner):
+    """One edge server for Continuous-only and Random, with two clock modes."""
+
+    def __init__(self, model_wrapper, bandwidth_trace, enable_comm_delay, clock):
+        super().__init__(model_wrapper, bandwidth_trace, enable_comm_delay, clock)
+        self.capture_observation = capture_observation
+        self._changed = Condition()
+        self._closed = False
+        self._error = None
+        self._latest_applied_id = -1
+        self._worker = None
+        if not clock.enabled:
+            self._worker = Thread(target=self._run_wall_worker, daemon=True)
+            self._worker.start()
+
+    def submit(self, snapshot, reason='periodic'):
+        with self._changed:
+            result = super().submit(snapshot, reason)
+            self._changed.notify_all()
+            return result
+
+    def _next_job(self, edge_free_ms):
+        eligible = [
+            job for job in self.jobs
+            if not job.started and math.isfinite(job.arrival)
+            and max(job.arrival, edge_free_ms) <= job.deadline
+        ]
+        return min(eligible, key=lambda job: (job.arrival, job.snapshot.request_id), default=None)
+
+    def _process_job(self, job, begin):
+        snapshot = job.snapshot
+        start = time.perf_counter()
+        with torch.inference_mode():
+            inputs, rotations = self.model_wrapper.prepare_inputs(
+                [snapshot.episode], [snapshot.target_position], [snapshot.assist_notice],
+            )
+            waypoints, profile = self.model_wrapper.run_profiled(
+                inputs=inputs, episodes=[snapshot.episode], rot_to_targets=rotations,
+            )
+            refined_waypoints = np.asarray(waypoints[0]).tolist()
+        service_ms = (time.perf_counter() - start) * 1000.0
+        ready = begin + service_ms if self.clock.enabled else self.clock.now_ms
+        return NS(
+            **vars(snapshot),
+            ready_wall_time=time.time(),
+            llm_latency_ms=profile['llm_latency_ms'],
+            traj_latency_ms=profile['traj_latency_ms'],
+            edge_service_ms=service_ms,
+            uplink_payload_bits=job.bits,
+            uplink_payload_mb=job.mb,
+            uplink_bandwidth_mbps=job.bw / 1000000.0,
+            uplink_latency_ms=job.uplink,
+            refined_waypoints=refined_waypoints,
+            edge_arrival_logical_ms=job.arrival,
+            ready_logical_ms=ready,
+        )
+
+    def _publish(self, job, begin, result):
+        self.compute_end = result.ready_logical_ms
+        job.result = result
+        self.record_event(dict(
+            record_type='edge_compute',
+            request_id=job.snapshot.request_id,
+            edge_arrival_logical_ms=job.arrival,
+            compute_start_logical_ms=begin,
+            edge_service_ms=result.edge_service_ms,
+            llm_latency_ms=result.llm_latency_ms,
+            traj_latency_ms=result.traj_latency_ms,
+            result_ready_logical_ms=result.ready_logical_ms,
+            **self.clock.metadata(),
+        ))
+
+    def _pump(self):
+        if not self.clock.enabled:
+            return
+        while True:
+            job = self._next_job(self.compute_end)
+            if job is None:
+                return
+            begin = max(job.arrival, self.compute_end)
+            if begin > self.clock.now_ms:
+                return
+            job.started = True
+            self._publish(job, begin, self._process_job(job, begin))
+
+    def _run_wall_worker(self):
+        try:
+            while True:
+                with self._changed:
+                    while not self._closed:
+                        now = self.clock.now_ms
+                        job = self._next_job(now)
+                        if job is None:
+                            self._changed.wait()
+                        elif job.arrival > now:
+                            self._changed.wait((job.arrival - now) / 1000.0)
+                        else:
+                            job.started = True
+                            break
+                    else:
+                        return
+                result = self._process_job(job, now)
+                with self._changed:
+                    if self._closed:
+                        return
+                    result.ready_logical_ms = self.clock.now_ms
+                    self._publish(job, now, result)
+                    self._changed.notify_all()
+        except Exception as error:
+            with self._changed:
+                self._error = error
+                self._changed.notify_all()
+
+    def _take_ready(self):
+        if self._error is not None:
+            raise self._error
+        now = self.clock.now_ms
+        ready = [
+            job for job in self.jobs if job.result is not None
+            and job.result.ready_logical_ms <= min(now, job.deadline)
+        ]
+        if not ready:
+            return None
+        newest = max(ready, key=lambda job: job.snapshot.request_id)
+        use_newest = newest.snapshot.request_id > self._latest_applied_id
+        for job in ready:
+            self.jobs.remove(job)
+            if job is not newest or not use_newest:
+                self.record_event(dict(
+                    record_type='stale_result',
+                    request_id=job.snapshot.request_id,
+                    **self.clock.metadata(),
+                ))
+        if use_newest:
+            self._latest_applied_id = newest.snapshot.request_id
+            return newest.result
+        return None
+
+    def poll_result(self):
+        self._pump()
+        with self._changed:
+            return self._take_ready()
+
+    def retry_expired(self):
+        with self._changed:
+            now = self.clock.now_ms
+            expired = [
+                job for job in self.jobs if job.deadline <= now
+                and (job.result is None or job.result.ready_logical_ms > job.deadline)
+            ]
+            for job in expired:
+                self.jobs.remove(job)
+        for job in expired:
+            self.record_event(dict(
+                record_type='request_timeout', request_id=job.snapshot.request_id,
+                submitted_after_exec_step=self.control_step(), **self.clock.metadata(),
+            ))
+            if job.snapshot.request_id <= self._latest_applied_id:
+                continue
+            obs = self.capture_observation(self.state, self.clock)
+            if self.state.dones[0]:
+                break
+            self.submit(self.state.build_snapshot(self.next_id, self.control_step(), obs, 0.0), 'timeout_retry')
+        return bool(expired)
+
+    def wait_result(self):
+        while True:
+            result = self.poll_result()
+            if result is not None:
+                return result
+            if self.retry_expired():
+                if self.state.dones[0]:
+                    return None
+                continue
+            with self._changed:
+                if not self.jobs:
+                    raise RuntimeError('No request to wait for')
+                now = self.clock.now_ms
+                if not self.clock.enabled:
+                    result = self._take_ready()
+                    if result is not None:
+                        return result
+                    if not self.jobs:
+                        raise RuntimeError('No request to wait for')
+                    deadline = min(job.deadline for job in self.jobs)
+                    if deadline > now:
+                        self._changed.wait((deadline - now) / 1000.0)
+                    continue
+                events = [job.deadline for job in self.jobs]
+                for job in self.jobs:
+                    if job.result is not None:
+                        events.append(job.result.ready_logical_ms)
+                    else:
+                        events.append(max(job.arrival, self.compute_end))
+                target = min(event for event in events if event > now)
+            self.advance(target - now)
+
+    def close(self):
+        with self._changed:
+            self._closed = True
+            self.jobs.clear()
+            self._changed.notify_all()
+        if self._worker is not None:
+            self._worker.join()
+
+
 def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, summary_path, bandwidth_trace, enable_comm_delay, chunk_waypoints=5, mode='continuous'):
     from src.vlnce_src.continue_eval import ContinuousEpisodeState
     model_wrapper.eval()
@@ -181,18 +394,23 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                     clock = FastEvalClock(bool(args.fast_eval), args.fast_eval_speedup)
                     clock.reset(eval_env.initial_obs_latency_ms)
                     bandwidth_trace.reset_for_episode(b['seq_name'])
-                    planner = AsyncEdgePlanner(model_wrapper, bandwidth_trace, enable_comm_delay, clock)
-                    capture_request = capture_observation if mode in ('continuous', 'random') else capture
+                    asynchronous = mode in ('continuous', 'random')
+                    planner_type = NavigationEdgePlanner if asynchronous else AsyncEdgePlanner
+                    planner = planner_type(model_wrapper, bandwidth_trace, enable_comm_delay, clock)
+                    capture_request = capture_observation if asynchronous else capture
                     planner.capture_observation = capture_request
                     step = 0
                     traj = []
                     index = 0
                     active = None
 
+                    log_lock = Lock()
+
                     def write(r):
                         r.update(seq_names=[b['seq_name']], map_names=[b['map_name']], evaluation_method=mode)
-                        fp.write(json.dumps(r) + '\n')
-                        fp.flush()
+                        with log_lock:
+                            fp.write(json.dumps(r) + '\n')
+                            fp.flush()
                     planner.bind_state(state, write)
                     planner.control_step = lambda: step
 
@@ -213,7 +431,9 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                         active = r
                         record = dict(record_type='decision', request_id=r.request_id, submitted_after_exec_step=r.submitted_step, result_ready_logical_ms=r.ready_logical_ms, result_applied_exec_step=step, refined_waypoints=traj, hover_wait_ms=0.0, obs_latency_ms=r.obs_latency_ms, groundingdino_latency_ms=0.0, **clock.metadata())
                         if mode != 'stopgo':
-                            record.update(action_age_ms=clock.now_ms - r.submitted_logical_ms, state_drift_m=float(np.linalg.norm(np.array(r.observation_pose) - state.current_sim_pose())))
+                            record.update(action_age_ms=record['logical_elapsed_ms'] - r.submitted_logical_ms, state_drift_m=float(np.linalg.norm(np.array(r.observation_pose) - state.current_sim_pose())))
+                        if asynchronous:
+                            record.update(result_applied_logical_ms=record['logical_elapsed_ms'], edge_service_ms=r.edge_service_ms)
                         write(record)
 
                     def wait():
@@ -221,7 +441,6 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                         apply(planner.wait_result())
                         write(dict(record_type='decision', hover_wait_ms=clock.now_ms - start, **clock.metadata()))
                     request('initial', eval_env.initial_obs_latency_ms)
-                    initial = planner.jobs[0]
                     wait()
                     initial_result = active
                     budget = int(args.max_control_steps)
@@ -229,11 +448,7 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                         budget = min(budget, int(args.maxWaypoints) * 5)
                     while not state.dones[0] and step < budget:
                         if mode != 'stopgo':
-                            while True:
-                                r = planner.poll_result()
-                                if r is None:
-                                    break
-                                apply(r)
+                            apply(planner.poll_result())
                         planner.retry_expired()
                         if state.dones[0]:
                             break
@@ -262,9 +477,10 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                         index += 1
                         step += 1
                         state.sync_runtime_status_from_sim()
-                        obs = check_evaluation(state, model_wrapper, clock, step, write) if not state.dones[0] else None
+                        obs = check_evaluation(state, model_wrapper, clock, step, write, account_ne=asynchronous) if not state.dones[0] else None
                         state._boundary_obs_ms = obs
-                        write(dict(record_type='execution', exec_step=step, executed_waypoints=1, action_sim_time_ms=timing['action_sim_time_ms'], action_wall_time_ms=timing['action_wall_time_ms'], execution_post_obs_latency_ms=0.0, execution_post_dino_latency_ms=0.0, **clock.metadata()))
+                        flight_fields = {'action_eval_time_ms': timing['airsim_action_latency_ms']} if asynchronous else {}
+                        write(dict(record_type='execution', exec_step=step, executed_waypoints=1, action_sim_time_ms=timing['action_sim_time_ms'], action_wall_time_ms=timing['action_wall_time_ms'], execution_post_obs_latency_ms=0.0, execution_post_dino_latency_ms=0.0, **flight_fields, **clock.metadata()))
                         if state.dones[0] or step >= budget:
                             break
                         if mode == 'continuous' and request_due(step, chunk_waypoints):
