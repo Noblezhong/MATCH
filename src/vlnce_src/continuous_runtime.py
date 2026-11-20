@@ -12,8 +12,16 @@ def request_due(step, interval):
     return step > 0 and step % max(1, int(interval)) == 0
 
 def capture(state, clock):
+    """Capture with the existing depth check, including the five-step evaluator."""
+    return _capture(state, clock, state.process_env_output)
+
+def capture_observation(state, clock):
+    """Capture for asynchronous requests; evaluation runs separately every five steps."""
+    return _capture(state, clock, state.record_env_output)
+
+def _capture(state, clock, process_output):
     start = time.perf_counter()
-    state.process_env_output(state.eval_env.get_obs())
+    process_output(state.eval_env.get_obs())
     state._last_capture_step = int(state.eval_env.sim_states[0].step)
     ms = (time.perf_counter() - start) * 1000
     clock.advance_blocking(ms)
@@ -55,6 +63,7 @@ class AsyncEdgePlanner:
         self.next_id = 0
         self.compute_end = 0.0
         self.state = None
+        self.capture_observation = capture
         self.record_event = lambda r: None
 
     def bind_state(self, state, record_event):
@@ -126,7 +135,7 @@ class AsyncEdgePlanner:
         for j in expired:
             self.jobs.remove(j)
             self.record_event(dict(record_type='request_timeout', request_id=j.snapshot.request_id, submitted_after_exec_step=self.control_step(), **self.clock.metadata()))
-            obs = capture(self.state, self.clock)
+            obs = self.capture_observation(self.state, self.clock)
             if not self.state.dones[0]:
                 self.submit(self.state.build_snapshot(self.next_id, self.control_step(), obs, 0.0), 'timeout_retry')
         return bool(expired)
@@ -173,6 +182,8 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                     clock.reset(eval_env.initial_obs_latency_ms)
                     bandwidth_trace.reset_for_episode(b['seq_name'])
                     planner = AsyncEdgePlanner(model_wrapper, bandwidth_trace, enable_comm_delay, clock)
+                    capture_request = capture_observation if mode in ('continuous', 'random') else capture
+                    planner.capture_observation = capture_request
                     step = 0
                     traj = []
                     index = 0
@@ -186,7 +197,7 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                     planner.control_step = lambda: step
 
                     def request(reason, reuse=None):
-                        obs = reuse if reuse is not None else capture(state, clock)
+                        obs = reuse if reuse is not None else capture_request(state, clock)
                         if not state.dones[0]:
                             snap = state.build_snapshot(0, step, obs, 0.0)
                             if mode == 'stopgo' and reason == 'initial':
@@ -266,7 +277,7 @@ def evaluate(model_wrapper, assist, eval_env, eval_save_dir, profile_log_path, s
                             if not state.dones[0]:
                                 wait()
                     if getattr(state, '_last_capture_step', 0) != step:
-                        capture(state, clock)
+                        capture_request(state, clock)
                     state.dones[0] = True
                     state.maybe_finalize(force=True)
                     end = dict(record_type='episode_end', timing_contract='episode_logical_v2', control_steps=step, episode_latency_ms=clock.now_ms, success=bool(state.success), oracle_success=bool(state.oracle_success), collision=bool(state.collisions[0]), final_ne_m=state._calculate_distance_from_position(state.current_sim_pose()), initial_obs_latency_ms=eval_env.initial_obs_latency_ms, initial_uplink_start_logical_ms=initial_result.submitted_logical_ms, initial_uplink_latency_ms=initial_result.uplink_latency_ms, initial_uplink_payload_bits=initial_result.uplink_payload_bits, initial_uplink_payload_mb=initial_result.uplink_payload_mb, initial_uplink_bandwidth_mbps=initial_result.uplink_bandwidth_mbps, **state.cr_state.metadata(), **clock.metadata())
