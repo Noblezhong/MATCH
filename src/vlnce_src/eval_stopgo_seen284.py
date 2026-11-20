@@ -196,7 +196,7 @@ def main():
     finally:
         if SERVER_STARTED:
             # Close only scenes owned by our dedicated server, then stop that server.
-            subprocess.run([PYTHON,'-c',f"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',PORT),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
+            subprocess.run([PYTHON,'-c',f"import msgpackrpc; c=msgpackrpc.Client(msgpackrpc.Address('192.168.105.18',{PORT}),timeout=30); c.call('close_scenes','192.168.105.18')"],check=False)
             subprocess.run(['ssh',REMOTE,'tmux','send-keys','-t',SERVER_SESSION,'C-c'],check=False)
         if formal is not None:
             subprocess.run(['scp',REMOTE+f':/tmp/{SERVER_SESSION}.log',str(formal/'logs/server4090.log')],check=False)
